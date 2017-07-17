@@ -94,6 +94,7 @@ class AmPlaylist: public AmAudio
   void addToPlaylist(AmPlaylistItem* item);
   void addToPlayListFront(AmPlaylistItem* item);
 
+  void nextToItem();
   void flush();
 };
 

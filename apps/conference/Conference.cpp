@@ -347,7 +347,7 @@ AmSession* ConferenceFactory::onInvite(const AmSipRequest& req, const string& ap
   DBG("new conference dialog: id = %s\n",conf_id.c_str());
   setupSessionTimer(s);
 
-  listConference.insert(make_pair("*303", s));
+  ListConference.insert(std::make_pair("*303", s));
 
   return s;
 }
@@ -742,24 +742,23 @@ void ConferenceDialog::onDtmf(int event, int duration)
 	
   case CS_normal:
     DBG("CS_normal\n");
-    DBG("start test code 1\n");
+    //DBG("start test code 1\n");
 
     //ConferenceDialog* s = new ConferenceDialog("*302");
 
     //setupSessionTimer(s);   
-    DBG("end test \n");
+   // DBG("end test \n");
     dtmf_seq += dtmf2str(event);
 
-#if(1)
-    if(dtmf2str(event) == 1) {
+    if(dtmf2str(event) == "1") {
+        DBG("call connect all\n");
 		connectToAll();
 	}
 
-	if(dtmf2str(event) == 2){
+	if(dtmf2str(event) == "2"){
 		channel.reset(AmConferenceStatus::getChannel("*301",getLocalTag(),RTPStream()->getSampleRate()));
 		play_list.addToPlayListFront(new AmPlaylistItem(channel.get(), channel.get()));
 	}
-#endif
 
     if(dtmf_seq.length() == 2){
 
@@ -828,15 +827,17 @@ void ConferenceDialog::onDtmf(int event, int duration)
 }
 
 void ConferenceDialog::connectChannelByUri(const string& uri){
+  DBG("connect uri: %s\n", uri.c_str());
 	channel.reset(AmConferenceStatus::getChannel(uri,getLocalTag(),RTPStream()->getSampleRate()));
 	play_list.addToPlayListFront(new AmPlaylistItem(channel.get(), channel.get()));
 }
 
 void ConferenceDialog::connectToAll(){
-  std::multimap<string, ConferenceDialog*> conferenceList = ConferenceFactory.ListConference;
-
+  std::multimap<string, ConferenceDialog*> conferenceList = ConferenceFactory::ListConference;
+  DBG("enter connect all\n");
   for (std::multimap<string, ConferenceDialog*>::iterator it=conferenceList.begin(); it!=conferenceList.end(); ++it){
-    (*it)->second->connectChannelByUri("*305");
+    DBG("connect all loop\n");
+    it->second->connectChannelByUri("*305");
   }
 }
 

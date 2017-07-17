@@ -124,12 +124,18 @@ AmPlaylist::~AmPlaylist() {
 void AmPlaylist::addToPlaylist(AmPlaylistItem* item)
 {
   items_mut.lock();
+  DBG("enter add back size item: %zd\n", items.size());
+
   items.push_back(item);
+  DBG("end add front size item: %zd\n", items.size());
+
   items_mut.unlock();
 }
 
 void AmPlaylist::addToPlayListFront(AmPlaylistItem* item)
 {
+  DBG("enter add front size item: %zd\n", items.size());
+
   cur_mut.lock();
   items_mut.lock();
   if(cur_item){
@@ -139,6 +145,8 @@ void AmPlaylist::addToPlayListFront(AmPlaylistItem* item)
   else {
     items.push_front(item);
   }    
+
+  DBG("end add front size item: %zd\n", items.size());
   items_mut.unlock();
   cur_mut.unlock();
 }
@@ -161,6 +169,17 @@ void AmPlaylist::flush()
   while(cur_item)
     gotoNextItem(false);
   cur_mut.unlock();
+}
+
+void AmPlaylist::nextToItem(){
+  items_mut.lock();
+  DBG("next size item: %zd\n", items.size());
+  if(!items.empty()){
+    //icur_item = items.front();
+    items.pop_front();
+  }
+  items_mut.unlock();
+  gotoNextItem(false);
 }
 
 bool AmPlaylist::isEmpty()
