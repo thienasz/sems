@@ -108,7 +108,6 @@ class ConferenceDialog : public AmSession
   void disconnectDialout();
   void connectMainChannel();
   void connectChannelByUri(const string& uri);
-  void connectToAll();
   void closeChannels();
   void setupAudio();
 
@@ -136,7 +135,11 @@ public:
   void onSipReply(const AmSipRequest& req,
 		  const AmSipReply& reply, 
 		  AmBasicSipDialog::Status old_dlg_status);
-
+  
+  void connectToAll();
+  void connectAllToGroup();
+  string getConfID(){return conf_id;};
+  
 #ifdef WITH_SAS_TTS
   void onZRTPEvent(zrtp_event_t event, zrtp_stream_ctx_t *stream_ctx);
 #endif

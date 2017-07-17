@@ -756,8 +756,7 @@ void ConferenceDialog::onDtmf(int event, int duration)
 	}
 
 	if(dtmf2str(event) == "2"){
-		channel.reset(AmConferenceStatus::getChannel("*301",getLocalTag(),RTPStream()->getSampleRate()));
-		play_list.addToPlayListFront(new AmPlaylistItem(channel.get(), channel.get()));
+		connectAllToGroup();
 	}
 
     if(dtmf_seq.length() == 2){
@@ -828,8 +827,9 @@ void ConferenceDialog::onDtmf(int event, int duration)
 
 void ConferenceDialog::connectChannelByUri(const string& uri){
   DBG("connect uri: %s\n", uri.c_str());
-	channel.reset(AmConferenceStatus::getChannel(uri,getLocalTag(),RTPStream()->getSampleRate()));
-	play_list.addToPlayListFront(new AmPlaylistItem(channel.get(), channel.get()));
+  play_list.flush();
+  channel.reset(AmConferenceStatus::getChannel(uri,getLocalTag(),RTPStream()->getSampleRate()));
+  play_list.addToPlayListFront(new AmPlaylistItem(channel.get(), channel.get()));
 }
 
 void ConferenceDialog::connectToAll(){
@@ -838,6 +838,15 @@ void ConferenceDialog::connectToAll(){
   for (std::multimap<string, ConferenceDialog*>::iterator it=conferenceList.begin(); it!=conferenceList.end(); ++it){
     DBG("connect all loop\n");
     it->second->connectChannelByUri("*305");
+  }
+}
+
+void ConferenceDialog::connectAllToGroup(){
+  std::multimap<string, ConferenceDialog*> conferenceList = ConferenceFactory::ListConference;
+  DBG("enter connect all\n");
+  for (std::multimap<string, ConferenceDialog*>::iterator it=conferenceList.begin(); it!=conferenceList.end(); ++it){
+    DBG("connect all loop\n");
+    it->second->connectChannelByUri(it->second->getConfID());
   }
 }
 
