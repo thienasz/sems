@@ -740,14 +740,22 @@ void ConferenceDialog::onDtmf(int event, int duration)
     DBG("CS_normal\n");
     DBG("start test code 1\n");
 
-    channel.reset(AmConferenceStatus::getChannel("*302",getLocalTag(),RTPStream()->getSampleRate()));
-    play_list.addToPlayListFront(new AmPlaylistItem(channel.get(), channel.get()));
-
     //ConferenceDialog* s = new ConferenceDialog("*302");
 
     //setupSessionTimer(s);   
     DBG("end test \n");
     dtmf_seq += dtmf2str(event);
+
+#if(1)
+    if(dtmf_seq == 1) {
+		channel.reset(AmConferenceStatus::getChannel("*305",getLocalTag(),RTPStream()->getSampleRate()));
+		play_list.addToPlayListFront(new AmPlaylistItem(channel.get(), channel.get()));
+	}
+
+	if(dtmf_seq = 2){
+		play_list.gotoNextItem(FALSE)
+	}
+#endif
 
     if(dtmf_seq.length() == 2){
 
