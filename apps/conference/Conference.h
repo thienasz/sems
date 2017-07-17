@@ -138,7 +138,7 @@ public:
   
   void connectToAll();
   void connectAllToGroup();
-  string getConfID(){return conf_id;};
+  string connectToGroup();
   
 #ifdef WITH_SAS_TTS
   void onZRTPEvent(zrtp_event_t event, zrtp_stream_ctx_t *stream_ctx);

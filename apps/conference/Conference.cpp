@@ -756,6 +756,7 @@ void ConferenceDialog::onDtmf(int event, int duration)
 	}
 
 	if(dtmf2str(event) == "2"){
+		DBG("call connect to group\n");
 		connectAllToGroup();
 	}
 
@@ -832,6 +833,12 @@ void ConferenceDialog::connectChannelByUri(const string& uri){
   play_list.addToPlayListFront(new AmPlaylistItem(channel.get(), channel.get()));
 }
 
+void ConferenceDialog::connectToGroup(){
+  DBG("enter connect connectToGroup id: %s\n", conf_id);
+
+  connectChannelByUri(conf_id);
+}
+ 
 void ConferenceDialog::connectToAll(){
   std::multimap<string, ConferenceDialog*> conferenceList = ConferenceFactory::ListConference;
   DBG("enter connect all\n");
@@ -843,10 +850,10 @@ void ConferenceDialog::connectToAll(){
 
 void ConferenceDialog::connectAllToGroup(){
   std::multimap<string, ConferenceDialog*> conferenceList = ConferenceFactory::ListConference;
-  DBG("enter connect all\n");
+  DBG("enter connect connectAllToGroup\n");
   for (std::multimap<string, ConferenceDialog*>::iterator it=conferenceList.begin(); it!=conferenceList.end(); ++it){
-    DBG("connect all loop\n");
-    it->second->connectChannelByUri(it->second->getConfID());
+    DBG("connect group loop\n");
+    it->second->connectToGroup();
   }
 }
 
