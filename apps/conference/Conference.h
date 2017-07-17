@@ -70,35 +70,6 @@ struct DialoutConfEvent : public AmEvent {
   {}
 };
 
-/** \brief Factory for conference sessions */
-class ConferenceFactory : public AmSessionFactory
-{
-  static AmSessionEventHandlerFactory* session_timer_f;
-  static AmConfigReader cfg;
-
-public:
-  static string AudioPath;
-  static string LonelyUserFile;
-  static string JoinSound;
-  static string DropSound;
-  static string DialoutSuffix;
-  static PlayoutType m_PlayoutType;
-  static unsigned int MaxParticipants;
-  static bool UseRFC4240Rooms;
-
-  static void setupSessionTimer(AmSession* s);
-
-#ifdef USE_MYSQL
-  static mysqlpp::Connection Connection;
-#endif
-
-  ConferenceFactory(const string& _app_name);
-  virtual AmSession* onInvite(const AmSipRequest&, const string& app_name,
-			      const map<string,string>& app_params);
-  virtual AmSession* onRefer(const AmSipRequest& req, const string& app_name,
-			     const map<string,string>& app_params);
-  virtual int onLoad();
-};
 
 /** \brief session logic implementation of conference sessions */
 class ConferenceDialog : public AmSession
@@ -136,6 +107,8 @@ class ConferenceDialog : public AmSession
   void createDialoutParticipant(const string& uri);
   void disconnectDialout();
   void connectMainChannel();
+  void connectChannelByUri(const string& uri);
+  void connectToAll();
   void closeChannels();
   void setupAudio();
 
@@ -167,6 +140,37 @@ public:
 #ifdef WITH_SAS_TTS
   void onZRTPEvent(zrtp_event_t event, zrtp_stream_ctx_t *stream_ctx);
 #endif
+};
+
+/** \brief Factory for conference sessions */
+class ConferenceFactory : public AmSessionFactory
+{
+  static AmSessionEventHandlerFactory* session_timer_f;
+  static AmConfigReader cfg;
+
+public:
+  static std::multimap<string, ConferenceDialog*> ListConference;
+  static string AudioPath;
+  static string LonelyUserFile;
+  static string JoinSound;
+  static string DropSound;
+  static string DialoutSuffix;
+  static PlayoutType m_PlayoutType;
+  static unsigned int MaxParticipants;
+  static bool UseRFC4240Rooms;
+
+  static void setupSessionTimer(AmSession* s);
+
+#ifdef USE_MYSQL
+  static mysqlpp::Connection Connection;
+#endif
+
+  ConferenceFactory(const string& _app_name);
+  virtual AmSession* onInvite(const AmSipRequest&, const string& app_name,
+			      const map<string,string>& app_params);
+  virtual AmSession* onRefer(const AmSipRequest& req, const string& app_name,
+			     const map<string,string>& app_params);
+  virtual int onLoad();
 };
 
 #endif
