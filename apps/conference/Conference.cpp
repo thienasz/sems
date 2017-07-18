@@ -409,7 +409,8 @@ ConferenceDialog::ConferenceDialog(const string& conf_id,
     play_list(this),
     dialout_channel(dialout_channel),
     state(CS_normal),
-    allow_dialout(false)
+    allow_dialout(false),
+    isPtt(false)
 {
   dialedout = this->dialout_channel.get() != 0;
   RTPStream()->setPlayoutType(ConferenceFactory::m_PlayoutType);
@@ -421,7 +422,10 @@ ConferenceDialog::ConferenceDialog(const string& conf_id,
 ConferenceDialog::~ConferenceDialog()
 {
   DBG("ConferenceDialog::~ConferenceDialog()\n");
-
+  if(isPtt){
+	ConferenceFactory::cancelConnectAll();
+  }
+  
   typedef multimap<string, ConferenceDialog*>::iterator mapit;
   std::pair<mapit,mapit> range = ConferenceFactory::ListConference.equal_range(group_id);
   mapit it = range.first;
@@ -779,18 +783,21 @@ void ConferenceDialog::onDtmf(int event, int duration)
 
     //setupSessionTimer(s);   
    // DBG("end test \n");
-    dtmf_seq += dtmf2str(event);
+    //dtmf_seq += dtmf2str(event);
 
     if(dtmf2str(event) == "1") {
         DBG("call connect all\n");
 		ConferenceFactory::connectToAll();
+		isPtt = true;
 	}
 
 	if(dtmf2str(event) == "2"){
 		DBG("call connect to group\n");
 		ConferenceFactory::cancelConnectAll();
+	    isPtt = false;
 	}
 
+#if 0
     if(dtmf_seq.length() == 2){
 
 #ifdef WITH_SAS_TTS
@@ -852,6 +859,7 @@ void ConferenceDialog::onDtmf(int event, int duration)
       disconnectDialout();
       state = CS_normal;
     }
+#endif
     break;
 	
   }
