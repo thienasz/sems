@@ -46,11 +46,16 @@ using std::string;
 class ConferenceStatus;
 class ConferenceStatusContainer;
 
-
 enum { CS_normal=0,
        CS_dialing_out,
        CS_dialed_out,
        CS_dialout_connected };
+
+enum { DTMF_group = 1,
+       DTMF_cancel_group = 2,
+       DTMF_all = 3,
+       DTMF_cancel_all = 4,
+};
 
 enum { DoConfConnect = 100,
        DoConfDisconnect,

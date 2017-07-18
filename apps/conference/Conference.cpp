@@ -375,7 +375,7 @@ void ConferenceFactory::connectToAll(ConferenceDialog* conferenceActive){
     DBG("connect all loop\n");
     it->second->connectToAll();
     if(it->second != conferenceActive)
-      it->second->sendDtmf(1, 1000);
+      it->second->sendDtmf(DTMF_all, 1000);
   }
 }
 
@@ -385,7 +385,7 @@ void ConferenceFactory::cancelConnectAll(ConferenceDialog* conferenceActive){
     DBG("connect group loop\n");
     it->second->connectToGroup();
     if(it->second != conferenceActive)
-      it->second->sendDtmf(2, 1000);
+      it->second->sendDtmf(DTMF_cancel_all, 1000);
   }
 }
 
@@ -789,13 +789,13 @@ void ConferenceDialog::onDtmf(int event, int duration)
    // DBG("end test \n");
     //dtmf_seq += dtmf2str(event);
 
-    if(dtmf2str(event) == "1") {
+    if(event == DTMF_all) {
         DBG("call connect all\n");
 		ConferenceFactory::connectToAll(this);
 		isPtt = true;
 	}
 
-	if(dtmf2str(event) == "2"){
+	if(event == DTMF_cancel_all){
 		DBG("call connect to group\n");
 		ConferenceFactory::cancelConnectAll(this);
 	    isPtt = false;
