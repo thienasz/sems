@@ -368,6 +368,23 @@ void ConferenceFactory::setupSessionTimer(AmSession* s) {
     }
   }
 }
+ 
+void ConferenceFactory::connectToAll(){
+  DBG("enter connect all\n");
+  for (std::multimap<string, ConferenceDialog*>::iterator it=ListConference.begin(); it!=ListConference.end(); ++it){
+    DBG("connect all loop\n");
+    it->second->connectToAll();
+  }
+}
+
+void ConferenceFactory::cancelConnectAll(){
+  DBG("enter connect cancelConnectAll\n");
+  for (std::multimap<string, ConferenceDialog*>::iterator it=ListConference.begin(); it!=ListConference.end(); ++it){
+    DBG("connect group loop\n");
+    it->second->connectToGroup();
+  }
+}
+
 
 AmSession* ConferenceFactory::onRefer(const AmSipRequest& req, const string& app_name,
 				      const map<string,string>& app_params)
@@ -525,6 +542,8 @@ void ConferenceDialog::onInvite(const AmSipRequest& req)
 
 void ConferenceDialog::onSessionStart()
 {
+  rtp_status = RTP_ingroup;
+  
   setupAudio();
   DBG("on start conference dialog\n");
   if(dialedout) {
@@ -764,12 +783,12 @@ void ConferenceDialog::onDtmf(int event, int duration)
 
     if(dtmf2str(event) == "1") {
         DBG("call connect all\n");
-		connectToAll();
+		ConferenceFactory::connectToAll();
 	}
 
 	if(dtmf2str(event) == "2"){
 		DBG("call connect to group\n");
-		cancelConnectAll();
+		ConferenceFactory::cancelConnectAll();
 	}
 
     if(dtmf_seq.length() == 2){
@@ -847,31 +866,26 @@ void ConferenceDialog::connectChannelByUri(const string& uri){
 
 void ConferenceDialog::connectToGroup(){
   DBG("enter connect connectToGroup id: %s\n", conf_id.c_str());
+  if(rtp_status == RTP_ingroup)
+  	return;
 
   connectChannelByUri(conf_id);
-}
- 
-void ConferenceDialog::connectToAll(){
-  std::multimap<string, ConferenceDialog*> conferenceList = ConferenceFactory::ListConference;
-  DBG("enter connect all\n");
-  for (std::multimap<string, ConferenceDialog*>::iterator it=conferenceList.begin(); it!=conferenceList.end(); ++it){
-    DBG("connect all loop\n");
-    it->second->connectChannelByUri("*305");
-  }
-}
-
-void ConferenceDialog::cancelConnectAll(){
-  std::multimap<string, ConferenceDialog*> conferenceList = ConferenceFactory::ListConference;
-  DBG("enter connect cancelConnectAll\n");
-  for (std::multimap<string, ConferenceDialog*>::iterator it=conferenceList.begin(); it!=conferenceList.end(); ++it){
-    DBG("connect group loop\n");
-    it->second->connectToGroup();
-  }
+  
+  rtp_status = RTP_ingroup;
 }
 
 void ConferenceDialog::setGroupId(string id)
 {
   group_id = id;
+}
+
+void ConferenceDialog::connectToAll(){
+  if(rtp_status == RTP_inall)
+  	return;
+  
+  connectChannelByUri("*305");
+  
+  rtp_status = RTP_inall;
 }
 
 void ConferenceDialog::createDialoutParticipant(const string& uri_user)

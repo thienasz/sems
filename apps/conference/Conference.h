@@ -58,6 +58,12 @@ enum { DoConfConnect = 100,
        DoConfError
 };
 
+enum RtpStatus { RTP_unkonw,
+	   RTP_ingroup,
+       RTP_incompany,
+       RTP_inall
+};
+
 /** \brief Event to trigger connecting/disconnecting between dialout session and main conference session */
 struct DialoutConfEvent : public AmEvent {
 
@@ -83,6 +89,7 @@ class ConferenceDialog : public AmSession
   auto_ptr<AmRingTone>  ErrorTone;
 
 
+  RtpStatus						rtp_status;
   string                        conf_id;
   string                        group_id;
   auto_ptr<AmConferenceChannel> channel;
@@ -138,7 +145,6 @@ public:
 		  AmBasicSipDialog::Status old_dlg_status);
   
   void connectToAll();
-  void cancelConnectAll();
   void connectToGroup();
   void setGroupId(string id);
   
@@ -165,6 +171,8 @@ public:
   static bool UseRFC4240Rooms;
 
   static void setupSessionTimer(AmSession* s);
+  static void connectToAll();
+  static void cancelConnectAll();
 
 #ifdef USE_MYSQL
   static mysqlpp::Connection Connection;
