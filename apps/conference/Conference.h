@@ -46,6 +46,12 @@ using std::string;
 class ConferenceStatus;
 class ConferenceStatusContainer;
 
+#define PTT_group 			1;
+#define PTT_cancel_group 	2;
+#define PTT_company 		3;
+#define PTT_cancel_company 	4;
+#define PTT_all 			5;
+#define PTT_cancel_all 		6;
 
 enum { CS_normal=0,
        CS_dialing_out,
@@ -57,6 +63,8 @@ enum { DoConfConnect = 100,
        DoConfRinging,
        DoConfError
 };
+
+enum PttStatus { unknow, group, company, all };
 
 /** \brief Event to trigger connecting/disconnecting between dialout session and main conference session */
 struct DialoutConfEvent : public AmEvent {
@@ -107,7 +115,7 @@ class ConferenceDialog : public AmSession
   void createDialoutParticipant(const string& uri);
   void disconnectDialout();
   void connectMainChannel();
-  void connectChannelByUri(const string& uri);
+  void connectChannelByUri(const string& uri, bool listenOnly = false);
   void closeChannels();
   void setupAudio();
 
@@ -137,8 +145,9 @@ public:
 		  AmBasicSipDialog::Status old_dlg_status);
   
   void connectToAll();
-  void connectAllToGroup();
+  void cancelConnectAll();
   void connectToGroup();
+  void connectToGroupListenOnly();
   
 #ifdef WITH_SAS_TTS
   void onZRTPEvent(zrtp_event_t event, zrtp_stream_ctx_t *stream_ctx);
@@ -162,6 +171,7 @@ public:
   static unsigned int MaxParticipants;
   static bool UseRFC4240Rooms;
 
+  static PttStatus pttStatus;
   static void setupSessionTimer(AmSession* s);
 
 #ifdef USE_MYSQL

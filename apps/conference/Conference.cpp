@@ -64,6 +64,7 @@ ConferenceFactory::ConferenceFactory(const string& _app_name)
 
 std::multimap<string, ConferenceDialog*> ConferenceFactory::ListConference;
 
+PttStatus ConferenceFactory::pttStatus;
 string ConferenceFactory::AudioPath;
 string ConferenceFactory::LonelyUserFile;
 string ConferenceFactory::JoinSound;
@@ -528,6 +529,7 @@ void ConferenceDialog::onSessionStart()
 
 void ConferenceDialog::setupAudio()
 {
+#if 0
   if(!ConferenceFactory::JoinSound.empty()) {
 	
     JoinSound.reset(new AmAudioFile());
@@ -543,7 +545,7 @@ void ConferenceDialog::setupAudio()
 		       AmAudioFile::Read))
       DropSound.reset(0);
   }
-
+#endif
 
   play_list.flush();
 
@@ -559,6 +561,7 @@ void ConferenceDialog::setupAudio()
   }
   else {
 
+#if 0
     channel.reset(AmConferenceStatus::getChannel(conf_id,getLocalTag(),RTPStream()->getSampleRate()));
 
     if (listen_only) {
@@ -568,6 +571,8 @@ void ConferenceDialog::setupAudio()
     else
 	play_list.addToPlaylist(new AmPlaylistItem(channel.get(),
 						   channel.get()));
+#endif
+    connectToGroupListenOnly();
   }
 
   DBG("setup audio conf_id: %s", conf_id.c_str());
@@ -750,15 +755,33 @@ void ConferenceDialog::onDtmf(int event, int duration)
    // DBG("end test \n");
     dtmf_seq += dtmf2str(event);
 
-    if(dtmf2str(event) == "1") {
-        DBG("call connect all\n");
-		connectToAll();
+    if(event == PTT_group) {
+        DBG("PTT_group\n");
+		connectToGroup();
+	}
+	if(event == PTT_cancel_group) {
+		DBG("PTT_cancel_group\n");
+		connectToGroupListenOnly();
 	}
 
-	if(dtmf2str(event) == "2"){
-		DBG("call connect to group\n");
-		connectAllToGroup();
+	if(event == PTT_company) {
+        DBG("PTT_company\n");
+		//ConferenceFactory::connectToCompany();
 	}
+	if(event == PTT_cancel_company) {
+		DBG("PTT_cancel_company\n");
+		//ConferenceFactory::cancelConnectCompany();
+	}
+
+	if(event == PTT_all) {
+		DBG("PTT_all\n");
+		connectToAll();
+	}
+	if(event == PTT_cancel_all) {
+		DBG("PTT_cancel_all\n");
+		cancelConnectAll();
+	}
+	
 
     if(dtmf_seq.length() == 2){
 
@@ -826,29 +849,49 @@ void ConferenceDialog::onDtmf(int event, int duration)
   }
 }
 
-void ConferenceDialog::connectChannelByUri(const string& uri){
+void ConferenceDialog::connectChannelByUri(const string& uri, listenOnly = false){
   DBG("connect uri: %s\n", uri.c_str());
   play_list.flush();
   channel.reset(AmConferenceStatus::getChannel(uri,getLocalTag(),RTPStream()->getSampleRate()));
-  play_list.addToPlayListFront(new AmPlaylistItem(channel.get(), channel.get()));
+  if(listenOnly)
+    play_list.addToPlayListFront(new AmPlaylistItem(channel.get(), (AmAudio*)NULL));
+  else
+  	play_list.addToPlayListFront(new AmPlaylistItem(channel.get(), channel.get()));
 }
 
 void ConferenceDialog::connectToGroup(){
-  DBG("enter connect connectToGroup id: %s\n", conf_id.c_str());
+  if(ConferenceFactory.pttStatus != PttStatus.unknow)
+	  return;
 
+  DBG("enter connect connectToGroupListenOnly id: %s\n", conf_id.c_str());
   connectChannelByUri(conf_id);
+  
+  ConferenceFactory.pttStatus = PttStatus.group;
 }
- 
+
+void ConferenceDialog::connectToGroupListenOnly(){
+  if(ConferenceFactory.pttStatus == PttStatus.unknow)
+	  return;
+  
+  DBG("enter connect connectToGroupListenOnly id: %s\n", conf_id.c_str());
+  connectChannelByUri(conf_id, true);
+
+  ConferenceFactory.pttStatus = PttStatus.unknow;
+}
+
 void ConferenceDialog::connectToAll(){
   std::multimap<string, ConferenceDialog*> conferenceList = ConferenceFactory::ListConference;
   DBG("enter connect all\n");
   for (std::multimap<string, ConferenceDialog*>::iterator it=conferenceList.begin(); it!=conferenceList.end(); ++it){
     DBG("connect all loop\n");
-    it->second->connectChannelByUri("*305");
+	if(it->second == this)
+      it->second->connectChannelByUri("*305");
+	else
+	  it->second->connectChannelByUri("*305", true);
   }
 }
 
-void ConferenceDialog::connectAllToGroup(){
+void ConferenceDialog::cancelConnectAll(){
   std::multimap<string, ConferenceDialog*> conferenceList = ConferenceFactory::ListConference;
   DBG("enter connect connectAllToGroup\n");
   for (std::multimap<string, ConferenceDialog*>::iterator it=conferenceList.begin(); it!=conferenceList.end(); ++it){
