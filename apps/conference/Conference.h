@@ -172,8 +172,8 @@ public:
   static bool UseRFC4240Rooms;
 
   static void setupSessionTimer(AmSession* s);
-  static void connectToAll();
-  static void cancelConnectAll();
+  static void connectToAll(ConferenceDialog* conferenceActive);
+  static void cancelConnectAll(ConferenceDialog* conferenceActive);
 
 #ifdef USE_MYSQL
   static mysqlpp::Connection Connection;

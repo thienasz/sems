@@ -369,19 +369,23 @@ void ConferenceFactory::setupSessionTimer(AmSession* s) {
   }
 }
  
-void ConferenceFactory::connectToAll(){
+void ConferenceFactory::connectToAll(ConferenceDialog* conferenceActive){
   DBG("enter connect all\n");
   for (std::multimap<string, ConferenceDialog*>::iterator it=ListConference.begin(); it!=ListConference.end(); ++it){
     DBG("connect all loop\n");
     it->second->connectToAll();
+    if(it->second != conferenceActive)
+      it->second->sendDtmf(1, 1000);
   }
 }
 
-void ConferenceFactory::cancelConnectAll(){
+void ConferenceFactory::cancelConnectAll(ConferenceDialog* conferenceActive){
   DBG("enter connect cancelConnectAll\n");
   for (std::multimap<string, ConferenceDialog*>::iterator it=ListConference.begin(); it!=ListConference.end(); ++it){
     DBG("connect group loop\n");
     it->second->connectToGroup();
+    if(it->second != conferenceActive)
+      it->second->sendDtmf(2, 1000);
   }
 }
 
@@ -423,7 +427,7 @@ ConferenceDialog::~ConferenceDialog()
 {
   DBG("ConferenceDialog::~ConferenceDialog()\n");
   if(isPtt){
-	ConferenceFactory::cancelConnectAll();
+	ConferenceFactory::cancelConnectAll(this);
   }
   
   typedef multimap<string, ConferenceDialog*>::iterator mapit;
@@ -787,13 +791,13 @@ void ConferenceDialog::onDtmf(int event, int duration)
 
     if(dtmf2str(event) == "1") {
         DBG("call connect all\n");
-		ConferenceFactory::connectToAll();
+		ConferenceFactory::connectToAll(this);
 		isPtt = true;
 	}
 
 	if(dtmf2str(event) == "2"){
 		DBG("call connect to group\n");
-		ConferenceFactory::cancelConnectAll();
+		ConferenceFactory::cancelConnectAll(this);
 	    isPtt = false;
 	}
 
