@@ -654,6 +654,7 @@ void AmSession::process(AmEvent* ev)
 
   AmAudioEvent* audio_ev = dynamic_cast<AmAudioEvent*>(ev);
   if(audio_ev){
+    DBG("audio event\n");
     onAudioEvent(audio_ev);
     return;
   }
@@ -668,6 +669,7 @@ void AmSession::process(AmEvent* ev)
 
   AmRtpTimeoutEvent* timeout_ev = dynamic_cast<AmRtpTimeoutEvent*>(ev);
   if(timeout_ev){
+    DBG("rtp timeout\n");
     onRtpTimeout();
     return;
   }

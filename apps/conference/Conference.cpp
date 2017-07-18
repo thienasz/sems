@@ -603,9 +603,9 @@ void ConferenceDialog::process(AmEvent* ev)
     case ConfNewParticipant:
 
       DBG("########## new participant #########\n");
+#if 0
       if((ce->participants == 1) && 
 	 !ConferenceFactory::LonelyUserFile.empty() ){
-
 	if(!LonelyUserFile.get()){
 			
 	  LonelyUserFile.reset(new AmAudioFile());
@@ -626,7 +626,7 @@ void ConferenceDialog::process(AmEvent* ev)
 				       new AmPlaylistItem( JoinSound.get(), NULL ));
 	}
       }
-		
+#endif		
       break;
     case ConfParticipantLeft:
       DBG("########## participant left the room #########\n");
@@ -834,7 +834,7 @@ void ConferenceDialog::connectChannelByUri(const string& uri){
 }
 
 void ConferenceDialog::connectToGroup(){
-  DBG("enter connect connectToGroup id: %s\n", conf_id);
+  DBG("enter connect connectToGroup id: %s\n", conf_id.c_str());
 
   connectChannelByUri(conf_id);
 }
