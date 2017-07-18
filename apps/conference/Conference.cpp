@@ -405,12 +405,14 @@ ConferenceDialog::~ConferenceDialog()
 {
   DBG("ConferenceDialog::~ConferenceDialog()\n");
 
-  multimap<string, ConferenceDialog*>::iterator mapit;
-  std::pair<mapit,mapit> range = names.equal_range(group_id);
+  typedef multimap<string, ConferenceDialog*>::iterator mapit;
+  std::pair<mapit,mapit> range = ConferenceFactory::ListConference.equal_range(group_id);
   mapit it = range.first;
   while (it != range.second)
-	if (it->second == this)
-	  names.erase(it++);
+	if (it->second == this){
+          DBG("ConferenceDialog::~ConferenceDialog() remove in list conference");
+	  ConferenceFactory::ListConference.erase(it++);
+        }
 	else
 	  ++it;
 
@@ -867,7 +869,7 @@ void ConferenceDialog::cancelConnectAll(){
   }
 }
 
-void setGroupId(string id)
+void ConferenceDialog::setGroupId(string id)
 {
   group_id = id;
 }
