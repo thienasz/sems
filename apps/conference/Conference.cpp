@@ -329,9 +329,11 @@ AmSession* ConferenceFactory::onInvite(const AmSipRequest& req, const string& ap
     throw AmSession::Exception(486, "Busy Here");
   }
 
-  DBG("factory invite \n");
-  string conf_id=req.user;  
-  string group_id="*305";
+  DBG("factory invite \n"); 
+  string conf_id = req.user.substr(4);
+  string company_id= conf_id.substr(0, conf_id.find("*")+1);
+
+  DBG("conf: %s - company: %s\n", conf_id.c_str(), company_id.c_str());
 
   if (UseRFC4240Rooms) {
     // see RFC4240 5.  Conference Service
@@ -348,8 +350,8 @@ AmSession* ConferenceFactory::onInvite(const AmSipRequest& req, const string& ap
   DBG("new conference dialog: id = %s\n",conf_id.c_str());
   setupSessionTimer(s);
 
-  ListConference.insert(std::make_pair(group_id, s));
-  s->setGroupId(group_id);
+  ListConference.insert(std::make_pair(company_id, s));
+  s->setCompanyId(company_id);
   return s;
 }
 
@@ -368,7 +370,29 @@ void ConferenceFactory::setupSessionTimer(AmSession* s) {
     }
   }
 }
- 
+
+void ConferenceFactory::connectToCompany(ConferenceDialog* conferenceActive){
+  DBG("enter connect all\n");
+  typedef std::multimap<string, ConferenceDialog*>::iterator mapit;
+  std::pair<mapit,mapit> range = ConferenceFactory::ListConference.equal_range(conferenceActive->getCompanyId());
+  mapit it = range.first;
+  while (it != range.second){
+  	it->second->connectToCompany();
+    ++it;
+  }
+}
+
+void ConferenceFactory::cancelConnectCompany(ConferenceDialog* conferenceActive){
+  DBG("enter connect cancelConnectAll\n");
+  typedef std::multimap<string, ConferenceDialog*>::iterator mapit;
+  std::pair<mapit,mapit> range = ConferenceFactory::ListConference.equal_range(conferenceActive->getCompanyId());
+  mapit it = range.first;
+  while (it != range.second){
+  	it->second->connectToGroup();
+    ++it;
+  }
+}
+
 void ConferenceFactory::connectToAll(ConferenceDialog* conferenceActive){
   DBG("enter connect all\n");
   for (std::multimap<string, ConferenceDialog*>::iterator it=ListConference.begin(); it!=ListConference.end(); ++it){
@@ -388,7 +412,6 @@ void ConferenceFactory::cancelConnectAll(ConferenceDialog* conferenceActive){
       it->second->sendDtmf(DTMF_cancel_all, 1000);
   }
 }
-
 
 AmSession* ConferenceFactory::onRefer(const AmSipRequest& req, const string& app_name,
 				      const map<string,string>& app_params)
@@ -431,7 +454,7 @@ ConferenceDialog::~ConferenceDialog()
   }
   
   typedef multimap<string, ConferenceDialog*>::iterator mapit;
-  std::pair<mapit,mapit> range = ConferenceFactory::ListConference.equal_range(group_id);
+  std::pair<mapit,mapit> range = ConferenceFactory::ListConference.equal_range(company_id);
   mapit it = range.first;
   while (it != range.second)
 	if (it->second == this){
@@ -788,17 +811,28 @@ void ConferenceDialog::onDtmf(int event, int duration)
     //setupSessionTimer(s);   
    // DBG("end test \n");
     //dtmf_seq += dtmf2str(event);
+	if(event == DTMF_company) {
+		DBG("DTMF_company\n");
+		ConferenceFactory::connectToCompany(this);
+		isPtt = true;
+	}
+
+	if(event == DTMF_cancel_company){
+		DBG("DTMF_cancel_company\n");
+		ConferenceFactory::cancelConnectCompany(this);
+		isPtt = false;
+	}
 
     if(event == DTMF_all) {
-        DBG("call connect all\n");
+        DBG("DTMF_all\n");
 		ConferenceFactory::connectToAll(this);
 		isPtt = true;
 	}
 
 	if(event == DTMF_cancel_all){
-		DBG("call connect to group\n");
+		DBG("DTMF_cancel_all\n");
 		ConferenceFactory::cancelConnectAll(this);
-	    isPtt = false;
+	    	isPtt = false;
 	}
 
 #if 0
@@ -886,16 +920,28 @@ void ConferenceDialog::connectToGroup(){
   rtp_status = RTP_ingroup;
 }
 
-void ConferenceDialog::setGroupId(string id)
-{
-  group_id = id;
+void ConferenceDialog::setCompanyId(string id){
+  company_id = id;
+}
+
+string ConferenceDialog::getCompanyId(){
+  return company_id;
+}
+
+void ConferenceDialog::connectToCompany(){
+  if(rtp_status != RTP_ingroup)
+  	return;
+  
+  connectChannelByUri(company_id);
+  
+  rtp_status = RTP_incompany;
 }
 
 void ConferenceDialog::connectToAll(){
-  if(rtp_status == RTP_inall)
+  if(rtp_status != RTP_ingroup)
   	return;
   
-  connectChannelByUri("*305");
+  connectChannelByUri("*30*");
   
   rtp_status = RTP_inall;
 }
