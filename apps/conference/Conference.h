@@ -71,6 +71,8 @@ enum RtpStatus { RTP_unkonw,
        RTP_inall
 };
 
+typedef std::multimap<string, string> ConferenceList;
+
 /** \brief Event to trigger connecting/disconnecting between dialout session and main conference session */
 struct DialoutConfEvent : public AmEvent {
 
@@ -168,9 +170,12 @@ class ConferenceFactory : public AmSessionFactory
 {
   static AmSessionEventHandlerFactory* session_timer_f;
   static AmConfigReader cfg;
+  static AmMutex conf_list_mut;
+  static AmMutex session_mut;
+  static ConferenceDialog* sessionActive;
 
 public:
-  static std::multimap<string, ConferenceDialog*> ListConference;
+  static ConferenceList ListConference;
   static string AudioPath;
   static string LonelyUserFile;
   static string JoinSound;
@@ -187,7 +192,8 @@ public:
   
   static void connectToAll(ConferenceDialog* conferenceActive);
   static void cancelConnectAll(ConferenceDialog* conferenceActive);
-
+  static ConferenceDialog* getSessionActive();
+  
 #ifdef USE_MYSQL
   static mysqlpp::Connection Connection;
 #endif

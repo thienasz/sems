@@ -38,7 +38,12 @@ using std::string;
 class AmConferenceChannel;
 
 enum { ConfNewParticipant = 1,
-       ConfParticipantLeft };
+       ConfParticipantLeft,
+       ConfConnectGroup,
+       ConfConnectCompany,
+       ConfCancelConnectCompany,
+       ConfConnectAll,
+       ConfCancelConnectAll};
 
 /** \brief event in a conference*/
 struct ConferenceEvent: public AmEvent
