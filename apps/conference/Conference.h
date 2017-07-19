@@ -169,6 +169,9 @@ class ConferenceFactory : public AmSessionFactory
 {
   static AmSessionEventHandlerFactory* session_timer_f;
   static AmConfigReader cfg;
+  static AmMutex conf_list_mut;
+  static AmMutex session_mut;
+  //static ConferenceDialog* sessionActive;
 
 public:
   static std::multimap<string, string> ListConference;
@@ -188,7 +191,8 @@ public:
   
   static void connectToAll(ConferenceDialog* conferenceActive);
   static void cancelConnectAll(ConferenceDialog* conferenceActive);
-
+  //static ConferenceDialog* getSessionActive();
+  
 #ifdef USE_MYSQL
   static mysqlpp::Connection Connection;
 #endif
