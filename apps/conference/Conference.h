@@ -53,8 +53,10 @@ enum { CS_normal=0,
 
 enum { DTMF_group = 1,
        DTMF_cancel_group = 2,
-       DTMF_all = 3,
-       DTMF_cancel_all = 4,
+       DTMF_company = 3,
+       DTMF_cancel_company = 4,
+       DTMF_all = 5,
+       DTMF_cancel_all = 6,
 };
 
 enum { DoConfConnect = 100,
@@ -97,7 +99,7 @@ class ConferenceDialog : public AmSession
   RtpStatus						rtp_status;
   bool                          isPtt;
   string                        conf_id;
-  string                        group_id;
+  string                        company_id;
   auto_ptr<AmConferenceChannel> channel;
 
   int                           state;
@@ -149,10 +151,11 @@ public:
   void onSipReply(const AmSipRequest& req,
 		  const AmSipReply& reply, 
 		  AmBasicSipDialog::Status old_dlg_status);
-  
+
+  void connectToCompany();
   void connectToAll();
   void connectToGroup();
-  void setGroupId(string id);
+  void setCompanyId(string id);
   
 #ifdef WITH_SAS_TTS
   void onZRTPEvent(zrtp_event_t event, zrtp_stream_ctx_t *stream_ctx);
@@ -177,6 +180,10 @@ public:
   static bool UseRFC4240Rooms;
 
   static void setupSessionTimer(AmSession* s);
+
+  static void connectToCompany(ConferenceDialog* conferenceActive);
+  static void cancelConnectCompany(ConferenceDialog* conferenceActive);
+  
   static void connectToAll(ConferenceDialog* conferenceActive);
   static void cancelConnectAll(ConferenceDialog* conferenceActive);
 
