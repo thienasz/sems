@@ -156,6 +156,7 @@ public:
   void connectToAll();
   void connectToGroup();
   void setCompanyId(string id);
+  string getConferenceId(){return conf_id;};
   string getCompanyId();
   
 #ifdef WITH_SAS_TTS
@@ -170,7 +171,7 @@ class ConferenceFactory : public AmSessionFactory
   static AmConfigReader cfg;
 
 public:
-  static std::multimap<string, ConferenceDialog*> ListConference;
+  static std::multimap<string, string> ListConference;
   static string AudioPath;
   static string LonelyUserFile;
   static string JoinSound;
