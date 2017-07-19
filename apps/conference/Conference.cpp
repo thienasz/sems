@@ -369,17 +369,17 @@ void ConferenceFactory::setupSessionTimer(AmSession* s) {
   }
 }
 
-ConferenceDialog* ConferenceFactory::getSessionActive()
-{  
-  return sessionActive;
-};
+//ConferenceDialog* ConferenceFactory::getSessionActive()
+//{  
+//  return sessionActive;
+//};
 
 void ConferenceFactory::connectToCompany(ConferenceDialog* conferenceActive){
   DBG("enter connect all\n");
   conf_list_mut.lock();
-  sessionActive = conferenceActive;
-  std::pair<ConferenceList,ConferenceList> range = ConferenceFactory::Conferences.equal_range(conferenceActive->getCompanyId());
-  mapit it = range.first;
+  //sessionActive = conferenceActive;
+  std::pair<ConferenceList::iterator,ConferenceList::iterator> range = ConferenceFactory::Conferences.equal_range(conferenceActive->getCompanyId());
+  ConferenceList::iterator it = range.first;
   while (it != range.second){
   	AmConferenceStatus::postConferenceEvent(it->second, ConfConnectCompany, conferenceActive->getLocalTag());
     ++it;
@@ -392,13 +392,13 @@ void ConferenceFactory::cancelConnectCompany(ConferenceDialog* conferenceActive)
   DBG("enter connect cancelConnectAll\n");
   conf_list_mut.lock();
   
-  std::pair<ConferenceList,ConferenceList> range = ConferenceFactory::Conferences.equal_range(conferenceActive->getCompanyId());
-  mapit it = range.first;
+  std::pair<ConferenceList::iterator,ConferenceList::iterator> range = ConferenceFactory::Conferences.equal_range(conferenceActive->getCompanyId());
+  ConferenceList::iterator it = range.first;
   while (it != range.second){
   	AmConferenceStatus::postConferenceEvent(it->second, ConfCancelConnectCompany, conferenceActive->getLocalTag());
     ++it;
   }
-  sessionActive = NULL;
+  //sessionActive = NULL;
 
   conf_list_mut.unlock();
 }
@@ -719,22 +719,22 @@ void ConferenceDialog::process(AmEvent* ev)
 	  	break;
 	case ConfConnectCompany:
 		connectToCompany();
-		if(ConferenceFactory::getSessionActive() != this)
+		//if(ConferenceFactory::getSessionActive() != this)
 		  sendDtmf(DTMF_company, 1000);
 	  	break;
 	case ConfCancelConnectCompany:
 		connectToGroup();
-		if(ConferenceFactory::getSessionActive() != this)
+		//if(ConferenceFactory::getSessionActive() != this)
 		  sendDtmf(DTMF_cancel_company, 1000);
 	  	break;
 	case ConfConnectAll:
 		connectToAll();
-		if(ConferenceFactory::getSessionActive() != this)
+		//if(ConferenceFactory::getSessionActive() != this)
 		  sendDtmf(DTMF_all, 1000);
 	  	break;
 	case ConfCancelConnectAll:
 		connectToGroup();
-		if(ConferenceFactory::getSessionActive() != this)
+		//if(ConferenceFactory::getSessionActive() != this)
 		  sendDtmf(DTMF_cancel_all, 1000);
 	  	break;
     default:
