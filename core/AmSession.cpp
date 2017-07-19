@@ -382,13 +382,13 @@ bool AmSession::processingCycle() {
       processing_status = SESSION_WAITING_DISCONNECTED;
       
       if ((dlg_status != AmSipDialog::Disconnected) &&
-      (dlg_status != AmSipDialog::Cancelling)) {
-        DBG("app did not send BYE - do that for the app\n");
-        if (dlg->bye() != 0) {
-          processing_status = SESSION_ENDED_DISCONNECTED;
-          // BYE sending failed - don't wait for dlg status to go disconnected
-          return false;
-        }
+	  (dlg_status != AmSipDialog::Cancelling)) {
+	DBG("app did not send BYE - do that for the app\n");
+	if (dlg->bye() != 0) {
+	  processing_status = SESSION_ENDED_DISCONNECTED;
+	  // BYE sending failed - don't wait for dlg status to go disconnected
+	  return false;
+	}
       }
       
       return true;

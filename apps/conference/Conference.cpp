@@ -62,7 +62,7 @@ ConferenceFactory::ConferenceFactory(const string& _app_name)
 {
 }
 
-std::multimap<string, string> ConferenceFactory::ListConference;
+std::multimap<string, ConferenceDialog*> ConferenceFactory::ListConference;
 
 string ConferenceFactory::AudioPath;
 string ConferenceFactory::LonelyUserFile;
@@ -350,8 +350,7 @@ AmSession* ConferenceFactory::onInvite(const AmSipRequest& req, const string& ap
   DBG("new conference dialog: id = %s\n",conf_id.c_str());
   setupSessionTimer(s);
 
-  ListConference.insert(std::make_pair(company_id, conf_id));
-
+  ListConference.insert(std::make_pair(company_id, s));
   s->setCompanyId(company_id);
   return s;
 }
@@ -372,67 +371,46 @@ void ConferenceFactory::setupSessionTimer(AmSession* s) {
   }
 }
 
-//ConferenceDialog* ConferenceFactory::getSessionActive()
-//{  
-//  return sessionActive;
-//};
-
 void ConferenceFactory::connectToCompany(ConferenceDialog* conferenceActive){
   DBG("enter connect all\n");
-  typedef std::multimap<string, string>::iterator mapit;
+  typedef std::multimap<string, ConferenceDialog*>::iterator mapit;
   std::pair<mapit,mapit> range = ConferenceFactory::ListConference.equal_range(conferenceActive->getCompanyId());
   mapit it = range.first;
   while (it != range.second){
-  	AmConferenceStatus::postConferenceEvent(conferenceActive->getConferenceId(), ConfConnectCompany, conferenceActive->getLocalTag())
-
+  	it->second->connectToCompany();
     ++it;
   }
-
-  conf_list_mut.unlock();
 }
 
 void ConferenceFactory::cancelConnectCompany(ConferenceDialog* conferenceActive){
   DBG("enter connect cancelConnectAll\n");
-
-  typedef std::multimap<string, string>::iterator mapit;
+  typedef std::multimap<string, ConferenceDialog*>::iterator mapit;
   std::pair<mapit,mapit> range = ConferenceFactory::ListConference.equal_range(conferenceActive->getCompanyId());
   mapit it = range.first;
   while (it != range.second){
-  	AmConferenceStatus::postConferenceEvent(conferenceActive->getConferenceId(), ConfCancelConnectCompany, conferenceActive->getLocalTag())
+  	it->second->connectToGroup();
     ++it;
   }
-  //sessionActive = NULL;
-
-  conf_list_mut.unlock();
 }
 
 void ConferenceFactory::connectToAll(ConferenceDialog* conferenceActive){
   DBG("enter connect all\n");
-
-  for (std::multimap<string, string>::iterator it=ListConference.begin(); it!=ListConference.end(); ++it){
+  for (std::multimap<string, ConferenceDialog*>::iterator it=ListConference.begin(); it!=ListConference.end(); ++it){
     DBG("connect all loop\n");
-    //it->second->connectToAll();
-    if(it->second != conferenceActive->getConferenceId())
+    it->second->connectToAll();
+    if(it->second != conferenceActive)
       it->second->sendDtmf(DTMF_all, 1000);
-
   }
-  
-  conf_list_mut.unlock();
 }
 
 void ConferenceFactory::cancelConnectAll(ConferenceDialog* conferenceActive){
   DBG("enter connect cancelConnectAll\n");
-
-  for (std::multimap<string, string>::iterator it=ListConference.begin(); it!=ListConference.end(); ++it){
+  for (std::multimap<string, ConferenceDialog*>::iterator it=ListConference.begin(); it!=ListConference.end(); ++it){
     DBG("connect group loop\n");
-    //it->second->connectToGroup();
-    if(it->second != conferenceActive->getConferenceId())
+    it->second->connectToGroup();
+    if(it->second != conferenceActive)
       it->second->sendDtmf(DTMF_cancel_all, 1000);
-
   }
-  sessionActive = NULL;
-  
-  conf_list_mut.unlock();
 }
 
 AmSession* ConferenceFactory::onRefer(const AmSipRequest& req, const string& app_name,
@@ -475,14 +453,14 @@ ConferenceDialog::~ConferenceDialog()
 	ConferenceFactory::cancelConnectAll(this);
   }
   
-  typedef multimap<string, string>::iterator mapit;
-  std::pair<mapit,mapit> range = ConferenceFactory::Conferences.equal_range(company_id);
+  typedef multimap<string, ConferenceDialog*>::iterator mapit;
+  std::pair<mapit,mapit> range = ConferenceFactory::ListConference.equal_range(company_id);
   mapit it = range.first;
   while (it != range.second)
-	if (it->second == conf_id){
-      DBG("ConferenceDialog::~ConferenceDialog() remove in list conference");
-	  ConferenceFactory::Conferences.erase(it++);
-    }
+	if (it->second == this){
+          DBG("ConferenceDialog::~ConferenceDialog() remove in list conference");
+	  ConferenceFactory::ListConference.erase(it++);
+        }
 	else
 	  ++it;
 
@@ -720,12 +698,6 @@ void ConferenceDialog::process(AmEvent* ev)
 				     new AmPlaylistItem( DropSound.get(), NULL ));
       }
       break;
-	case ConfConnectCompany:
- 	  connectToCompany();
- 	  break;
- 	case ConfCancelConnectCompany:
- 	  connectToGroup();
- 	  break;
     default:
       break;
     }
@@ -851,7 +823,6 @@ void ConferenceDialog::onDtmf(int event, int duration)
 		isPtt = false;
 	}
 
-#if 0
     if(event == DTMF_all) {
         DBG("DTMF_all\n");
 		ConferenceFactory::connectToAll(this);
@@ -861,10 +832,10 @@ void ConferenceDialog::onDtmf(int event, int duration)
 	if(event == DTMF_cancel_all){
 		DBG("DTMF_cancel_all\n");
 		ConferenceFactory::cancelConnectAll(this);
-	    isPtt = false;
+	    	isPtt = false;
 	}
-#endif
 
+#if 0
     if(dtmf_seq.length() == 2){
 
 #ifdef WITH_SAS_TTS
@@ -926,6 +897,7 @@ void ConferenceDialog::onDtmf(int event, int duration)
       disconnectDialout();
       state = CS_normal;
     }
+#endif
     break;
 	
   }

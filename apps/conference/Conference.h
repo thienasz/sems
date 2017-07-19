@@ -156,7 +156,6 @@ public:
   void connectToAll();
   void connectToGroup();
   void setCompanyId(string id);
-  string getConferenceId(){return conf_id;};
   string getCompanyId();
   
 #ifdef WITH_SAS_TTS
@@ -169,12 +168,9 @@ class ConferenceFactory : public AmSessionFactory
 {
   static AmSessionEventHandlerFactory* session_timer_f;
   static AmConfigReader cfg;
-  static AmMutex conf_list_mut;
-  static AmMutex session_mut;
-  //static ConferenceDialog* sessionActive;
 
 public:
-  static std::multimap<string, string> ListConference;
+  static std::multimap<string, ConferenceDialog*> ListConference;
   static string AudioPath;
   static string LonelyUserFile;
   static string JoinSound;
@@ -191,8 +187,7 @@ public:
   
   static void connectToAll(ConferenceDialog* conferenceActive);
   static void cancelConnectAll(ConferenceDialog* conferenceActive);
-  //static ConferenceDialog* getSessionActive();
-  
+
 #ifdef USE_MYSQL
   static mysqlpp::Connection Connection;
 #endif
