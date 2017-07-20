@@ -656,10 +656,8 @@ DBG("setup audio\n");
 
 	for (std::set<string>::iterator it=sub_conf_ids.begin(); it!=sub_conf_ids.end(); it++){
          DBG("add channel: %s\n", (*it).c_str());
-		auto_ptr<AmConferenceChannel> subChannel;
-		subChannel.reset(AmConferenceStatus::getChannel(*it,getLocalTag(),RTPStream()->getSampleRate()));
-		play_list.addToSubPlaylist(new AmPlaylistItem(subChannel.get(),
-						   subChannel.get()));
+		AmConferenceChannel* subChannel = AmConferenceStatus::getChannel(*it,getLocalTag(),RTPStream()->getSampleRate());
+ 		play_list.addToSubPlaylist(subChannel, subChannel);
 		sub_channels.insert(subChannel);
 	}	
 #endif
@@ -1067,8 +1065,8 @@ void ConferenceDialog::closeChannels()
   channel.reset(NULL);
   dialout_channel.reset(NULL);
   companyChannel.reset(NULL);
-  for (set<auto_ptr<AmConferenceChannel>>::iterator it=sub_channels.begin(); it!=sub_channels.end(); it++) {
-		 (*it).reset(NULL);
+  for (set<AmConferenceChannel*>::iterator it=sub_channels.begin(); it!=sub_channels.end(); it++) {
+		 delete (*it);
   }
 }
 

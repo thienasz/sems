@@ -103,7 +103,7 @@ class ConferenceDialog : public AmSession
   string                        company_id;
   auto_ptr<AmConferenceChannel> channel;
   auto_ptr<AmConferenceChannel> companyChannel;
-  set<auto_ptr<AmConferenceChannel>> sub_channels;
+  set<AmConferenceChannel*> sub_channels;
 
   int                           state;
   string                        dtmf_seq;
