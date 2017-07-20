@@ -99,6 +99,7 @@ class ConferenceDialog : public AmSession
   RtpStatus						rtp_status;
   bool                          isPtt;
   string                        conf_id;
+  set<string>                   sub_conf_ids;
   string                        company_id;
   auto_ptr<AmConferenceChannel> channel;
 

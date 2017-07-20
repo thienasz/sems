@@ -630,6 +630,19 @@ void ConferenceDialog::setupAudio()
     else
 	play_list.addToPlaylist(new AmPlaylistItem(channel.get(),
 						   channel.get()));
+
+	AmConferenceChannel* channel2 = AmConferenceStatus::getChannel(conf_id,getLocalTag(),RTPStream()->getSampleRate());
+
+	play_list.addToSubPlaylist(new AmPlaylistItem(channel2,
+							   channel2));
+
+#if 0
+	for (std::set<string>::iterator it=sub_conf_ids.begin(); it!=sub_conf_ids.end(); ++it){
+		channel.reset(AmConferenceStatus::getChannel(*it,getLocalTag(),RTPStream()->getSampleRate()));
+		play_list.addToPlaylist(new AmPlaylistItem(channel.get(),
+						   channel.get()));
+	}	
+#endif
   }
 
   DBG("setup audio conf_id: %s", conf_id.c_str());
@@ -823,18 +836,6 @@ void ConferenceDialog::onDtmf(int event, int duration)
 		isPtt = false;
 	}
 
-    if(event == DTMF_all) {
-        DBG("DTMF_all\n");
-		ConferenceFactory::connectToAll(this);
-		isPtt = true;
-	}
-
-	if(event == DTMF_cancel_all){
-		DBG("DTMF_cancel_all\n");
-		ConferenceFactory::cancelConnectAll(this);
-	    	isPtt = false;
-	}
-
 #if 0
     if(dtmf_seq.length() == 2){
 
@@ -922,6 +923,10 @@ void ConferenceDialog::connectToGroup(){
 
 void ConferenceDialog::setCompanyId(string id){
   company_id = id;
+}
+
+void ConferenceDialog::addSubConf(string id){
+  sub_conf_ids.insert(id);
 }
 
 string ConferenceDialog::getCompanyId(){
