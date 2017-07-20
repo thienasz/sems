@@ -154,6 +154,7 @@ public:
 		  AmBasicSipDialog::Status old_dlg_status);
 
   void connectToCompany();
+  void cancelConnectCompany();
   void connectToAll();
   void connectToGroup();
   void setCompanyId(string id);
