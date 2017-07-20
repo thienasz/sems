@@ -70,6 +70,10 @@ class AmPlaylist: public AmAudio
   AmMutex                cur_mut;
   AmPlaylistItem*        cur_item;
 
+  AmMutex                company_mut;
+  AmPlaylistItem*        company_item;
+
+  bool 					 play_company_room;
   AmEventQueue*          ev_q;
 
   void updateCurrentItem();
@@ -99,7 +103,8 @@ class AmPlaylist: public AmAudio
   void addToPlaylist(AmPlaylistItem* item);
   void addToPlayListFront(AmPlaylistItem* item);
   void addToSubPlaylist(AmPlaylistItem* item);
-
+  void addCompanyToPlaylist(AmPlaylistItem* item);
+  void setPlayCompanyRoom(bool play);
   void nextToItem();
   void flush();
 };

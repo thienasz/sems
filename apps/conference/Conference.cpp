@@ -330,10 +330,10 @@ AmSession* ConferenceFactory::onInvite(const AmSipRequest& req, const string& ap
   }
 
   DBG("factory invite \n"); 
-  string conf_id = req.user.substr(4);
-  string company_id= conf_id.substr(0, conf_id.find("*")+1);
+  string conf_ids = req.user.substr(4);
+  string company_id= conf_id.substr(0, conf_ids.find("*")+1);
 
-  DBG("conf: %s - company: %s\n", conf_id.c_str(), company_id.c_str());
+  DBG("conf: %s - company: %s\n", conf_ids.c_str(), company_id.c_str());
 
   if (UseRFC4240Rooms) {
     // see RFC4240 5.  Conference Service
@@ -346,11 +346,23 @@ AmSession* ConferenceFactory::onInvite(const AmSipRequest& req, const string& ap
     conf_id = req.user.substr(5);
   }
 
-  ConferenceDialog* s = new ConferenceDialog(conf_id);
-  DBG("new conference dialog: id = %s\n",conf_id.c_str());
+  ConferenceDialog* s = new ConferenceDialog(conf_ids);
+  DBG("new conference dialog: id = %s\n",conf_ids.c_str());
   setupSessionTimer(s);
 
   ListConference.insert(std::make_pair(company_id, s));
+
+  string conf_id = "";
+
+  for (std::string::iterator it=str.begin(); it!=str.end(); ++it){
+    conf_id += *it;
+	if(conf_id.length() == 3) {
+	  DBG("sub conf: %s - company: %s\n", conf_id.c_str(), company_id.c_str());
+      s->addSubConf(company_id + conf_id);
+	  conf_id = "";
+	}
+  }
+  
   s->setCompanyId(company_id);
   return s;
 }
@@ -388,7 +400,7 @@ void ConferenceFactory::cancelConnectCompany(ConferenceDialog* conferenceActive)
   std::pair<mapit,mapit> range = ConferenceFactory::ListConference.equal_range(conferenceActive->getCompanyId());
   mapit it = range.first;
   while (it != range.second){
-  	it->second->connectToGroup();
+  	it->second->cancelConnectCompany();
     ++it;
   }
 }
@@ -628,14 +640,18 @@ void ConferenceDialog::setupAudio()
 						   (AmAudio*)NULL));
     }
     else
-	play_list.addToSubPlaylist(new AmPlaylistItem(channel.get(),
+	play_list.addToPlaylist(new AmPlaylistItem(channel.get(),
 						   channel.get()));
 
-#if 0
+#if 1
+	AmConferenceChannel* companyChannel = AmConferenceStatus::getChannel(company_id,getLocalTag(),RTPStream()->getSampleRate());
+			play_list.addCompanyToPlaylist(new AmPlaylistItem(companyChannel,
+							   companyChannel));
+
 	for (std::set<string>::iterator it=sub_conf_ids.begin(); it!=sub_conf_ids.end(); ++it){
-		channel.reset(AmConferenceStatus::getChannel(*it,getLocalTag(),RTPStream()->getSampleRate()));
-		play_list.addToPlaylist(new AmPlaylistItem(channel.get(),
-						   channel.get()));
+		AmConferenceChannel* subChannel = AmConferenceStatus::getChannel(*it,getLocalTag(),RTPStream()->getSampleRate());
+		play_list.addToSubPlaylist(new AmPlaylistItem(subChannel,
+						   subChannel));
 	}	
 #endif
   }
@@ -932,9 +948,18 @@ void ConferenceDialog::connectToCompany(){
   if(rtp_status != RTP_ingroup)
   	return;
   
-  connectChannelByUri(company_id);
+  play_list.setPlayCompanyRoom(true);
   
   rtp_status = RTP_incompany;
+}
+
+void ConferenceDialog::cancelConnectCompany(){
+  if(rtp_status == RTP_ingroup)
+  	return;
+  
+  play_list.setPlayCompanyRoom(false);
+  
+  rtp_status = RTP_ingroup;
 }
 
 void ConferenceDialog::connectToAll(){

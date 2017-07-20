@@ -61,9 +61,18 @@ void AmPlaylist::gotoNextItem(bool notify)
 int AmPlaylist::get(unsigned long long system_ts, unsigned char* buffer, 
 		    int output_sample_rate, unsigned int nb_samples)
 {
-  DBG("play list get buffer\n");
+  //DBG("play list get buffer\n");
   int ret = -1;
-  
+
+  if(play_company_room) {
+    company_mut.lock();
+    ret = cur_item->play->get(system_ts,buffer,
+				   output_sample_rate,
+				   nb_samples);
+    company_mut.unlock();
+
+	return ret;
+  }
 #if 0
   cur_mut.lock();
   updateCurrentItem();
@@ -111,8 +120,18 @@ int AmPlaylist::get(unsigned long long system_ts, unsigned char* buffer,
 int AmPlaylist::put(unsigned long long system_ts, unsigned char* buffer, 
 		    int input_sample_rate, unsigned int size)
 {
-  DBG("play list put buffer\n");
+  //DBG("play list put buffer\n");
   int ret = -1;
+
+  if(play_company_room) {
+	company_mut.lock();
+	ret = cur_item->record->get(system_ts,buffer,
+					 output_sample_rate,
+					 nb_samples);
+	company_mut.unlock();
+		
+	return ret;
+  }
 
 #if 0
   cur_mut.lock();
@@ -155,7 +174,7 @@ int AmPlaylist::put(unsigned long long system_ts, unsigned char* buffer,
 
 AmPlaylist::AmPlaylist(AmEventQueue* q)
   : AmAudio(new AmAudioFormat(CODEC_PCM16)),
-    ev_q(q), cur_item(0)
+    ev_q(q), cur_item(0), play_company_room(false)
 {
   
 }
@@ -174,6 +193,20 @@ void AmPlaylist::addToPlaylist(AmPlaylistItem* item)
   DBG("end add front size item: %zd\n", items.size());
 
   items_mut.unlock();
+}
+
+void AmPlaylist::addCompanyToPlaylist(AmPlaylistItem* item)
+{
+  if(company_item)
+  	return;
+  company_mut.lock();
+  company_item = item;
+  company_mut.unlock();
+}
+
+void AmPlaylist::setPlayCompanyRoom(bool play)
+{
+  play_company_room = play;
 }
 
 void AmPlaylist::addToSubPlaylist(AmPlaylistItem* item)
