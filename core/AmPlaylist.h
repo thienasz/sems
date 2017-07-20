@@ -58,7 +58,10 @@ struct AmPlaylistItem
  */
 class AmPlaylist: public AmAudio
 {
-    
+
+  AmMutex                sub_items_mut;
+  set<AmPlaylistItem*>   sub_items;
+  
   AmMutex                items_mut;
   deque<AmPlaylistItem*> items;
 

@@ -62,7 +62,8 @@ int AmPlaylist::get(unsigned long long system_ts, unsigned char* buffer,
 		    int output_sample_rate, unsigned int nb_samples)
 {
   int ret = -1;
-
+  
+#if 0
   cur_mut.lock();
   updateCurrentItem();
 
@@ -83,6 +84,25 @@ int AmPlaylist::get(unsigned long long system_ts, unsigned char* buffer,
   }
 
   cur_mut.unlock();
+#endif
+  sub_items_mut.lock();
+  bool hasPlayFlag = false;
+  for (std::set<AmPlaylistItem*>::iterator it=sub_items.begin(); it!=sub_items.end(); ++it) {
+    if(it->play) {
+      hasPlayFlag = true;
+	  ret = it->play->get(system_ts,buffer,
+				   output_sample_rate,
+				   nb_samples);
+	}
+  }
+
+  if(!sub_items || !hasPlayFlag) {
+      ret = calcBytesToRead(nb_samples);
+	  DBG("memset buffer");
+	  memset(buffer,0,ret);
+  }
+  sub_items_mut.lock();
+  
   return ret;
 }
 
@@ -91,6 +111,7 @@ int AmPlaylist::put(unsigned long long system_ts, unsigned char* buffer,
 {
   int ret = -1;
 
+#if 0
   cur_mut.lock();
   updateCurrentItem();
   while(cur_item && 
@@ -107,6 +128,24 @@ int AmPlaylist::put(unsigned long long system_ts, unsigned char* buffer,
     ret = size;
     
   cur_mut.unlock();
+#endif 
+  bool hasRecordFlag = false;
+
+  sub_items_mut.lock();
+  for (std::set<AmPlaylistItem*>::iterator it=sub_items.begin(); it!=sub_items.end(); ++it) {
+  	if(it->play) {
+      hasRecordFlag = true;
+      ret = it->record->put(system_ts,buffer,
+				     input_sample_rate,
+				     size);
+	}
+  }
+
+  if(!sub_items || !hasRecordFlag) {
+      ret = size;
+  }
+  sub_items_mut.lock();
+  
   return ret;
 }
 
@@ -130,6 +169,17 @@ void AmPlaylist::addToPlaylist(AmPlaylistItem* item)
   DBG("end add front size item: %zd\n", items.size());
 
   items_mut.unlock();
+}
+
+void AmPlaylist::addToSubPlaylist(AmPlaylistItem* item)
+{
+  sub_items_mut.lock();
+  DBG("enter add back size sub_items: %zd\n", sub_items.size());
+
+  sub_items.insert(item);
+  DBG("end add front size sub_items: %zd\n", sub_items.size());
+
+  sub_items_mut.unlock();
 }
 
 void AmPlaylist::addToPlayListFront(AmPlaylistItem* item)
