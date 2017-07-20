@@ -33,6 +33,8 @@
 #include "AmEventQueue.h"
 
 #include <deque>
+#include <set>
+using std::set;
 using std::deque;
 /** \brief entry in an \ref AmPlaylist */
 struct AmPlaylistItem
@@ -45,7 +47,7 @@ struct AmPlaylistItem
 		 AmAudio* record)
     : play(play), record(record) {}
 
-  virtual ~AmPlaylistItem() { }
+  ~AmPlaylistItem(){delete record; delete play;};
 };
 
 /**
@@ -96,6 +98,7 @@ class AmPlaylist: public AmAudio
 
   void addToPlaylist(AmPlaylistItem* item);
   void addToPlayListFront(AmPlaylistItem* item);
+  void addToSubPlaylist(AmPlaylistItem* item);
 
   void nextToItem();
   void flush();

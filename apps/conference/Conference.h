@@ -158,7 +158,7 @@ public:
   void connectToGroup();
   void setCompanyId(string id);
   string getCompanyId();
-  
+  void addSubConf(string id);  
 #ifdef WITH_SAS_TTS
   void onZRTPEvent(zrtp_event_t event, zrtp_stream_ctx_t *stream_ctx);
 #endif

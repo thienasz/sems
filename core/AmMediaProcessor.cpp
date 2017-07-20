@@ -285,17 +285,14 @@ void AmMediaProcessorThread::processDtmfEvents()
 void AmMediaProcessorThread::processAudio(unsigned long long ts)
 {
 #if 1
-  //ERROR("SESSIONS COUNT %d\n", (int)sessions.size());
+  ERROR("SESSIONS COUNT %d\n", (int)sessions.size());
   // receiving
-
-  int got = 0;
   for(set<AmMediaSession*>::iterator it = sessions.begin();
       it != sessions.end(); it++)
   {
-    //ERROR("call-group %s\n", (*it)->getCallgroup().c_str());
-    if (got += (*it)->readStreams(ts, buffer) < 0)
+    ERROR("read call-group \n");
+    if ((*it)->readStreams(ts, buffer) < 0)
       postRequest(new SchedRequest(AmMediaProcessor::ClearSession, *it));
-    //break;
   }
 
   //memset(buffer, 0, AUDIO_BUFFER_SIZE);
@@ -306,6 +303,7 @@ void AmMediaProcessorThread::processAudio(unsigned long long ts)
 
     //(*it)->setGotTest(got);
     //if ((*it)->writeStreams(ts, buffer) < 0)
+    ERROR("write call-group\n");
     if ((*it)->writeStreams(ts, buffer) < 0)
       postRequest(new SchedRequest(AmMediaProcessor::ClearSession, *it));
   }

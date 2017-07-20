@@ -61,6 +61,7 @@ void AmPlaylist::gotoNextItem(bool notify)
 int AmPlaylist::get(unsigned long long system_ts, unsigned char* buffer, 
 		    int output_sample_rate, unsigned int nb_samples)
 {
+  DBG("play list get buffer\n");
   int ret = -1;
   
 #if 0
@@ -87,21 +88,22 @@ int AmPlaylist::get(unsigned long long system_ts, unsigned char* buffer,
 #endif
   sub_items_mut.lock();
   bool hasPlayFlag = false;
-  for (std::set<AmPlaylistItem*>::iterator it=sub_items.begin(); it!=sub_items.end(); ++it) {
-    if(it->play) {
+  for (set<AmPlaylistItem*>::iterator it=sub_items.begin(); it!=sub_items.end(); it++) {
+    if((*it)->play) {
       hasPlayFlag = true;
-	  ret = it->play->get(system_ts,buffer,
+         //DBG("for play items\n");
+	  ret = (*it)->play->get(system_ts,buffer,
 				   output_sample_rate,
 				   nb_samples);
 	}
   }
 
-  if(!sub_items || !hasPlayFlag) {
+  if(sub_items.empty() || !hasPlayFlag) {
       ret = calcBytesToRead(nb_samples);
 	  DBG("memset buffer");
 	  memset(buffer,0,ret);
   }
-  sub_items_mut.lock();
+  sub_items_mut.unlock();
   
   return ret;
 }
@@ -109,6 +111,7 @@ int AmPlaylist::get(unsigned long long system_ts, unsigned char* buffer,
 int AmPlaylist::put(unsigned long long system_ts, unsigned char* buffer, 
 		    int input_sample_rate, unsigned int size)
 {
+  DBG("play list put buffer\n");
   int ret = -1;
 
 #if 0
@@ -132,19 +135,20 @@ int AmPlaylist::put(unsigned long long system_ts, unsigned char* buffer,
   bool hasRecordFlag = false;
 
   sub_items_mut.lock();
-  for (std::set<AmPlaylistItem*>::iterator it=sub_items.begin(); it!=sub_items.end(); ++it) {
-  	if(it->play) {
+  for (set<AmPlaylistItem*>::iterator it=sub_items.begin(); it!=sub_items.end(); it++) {
+      if((*it)->record) {
       hasRecordFlag = true;
-      ret = it->record->put(system_ts,buffer,
+      //DBG("for record items\n");
+      ret = (*it)->record->put(system_ts,buffer,
 				     input_sample_rate,
 				     size);
 	}
   }
 
-  if(!sub_items || !hasRecordFlag) {
+  if(sub_items.empty() || !hasRecordFlag) {
       ret = size;
   }
-  sub_items_mut.lock();
+  sub_items_mut.unlock();
   
   return ret;
 }
@@ -156,7 +160,8 @@ AmPlaylist::AmPlaylist(AmEventQueue* q)
   
 }
 
-AmPlaylist::~AmPlaylist() {
+AmPlaylist::~AmPlaylist()
+{
   flush();
 }
 
@@ -219,6 +224,14 @@ void AmPlaylist::flush()
   while(cur_item)
     gotoNextItem(false);
   cur_mut.unlock();
+
+  sub_items_mut.lock();
+  for (std::set<AmPlaylistItem*>::iterator it=sub_items.begin(); it!=sub_items.end(); it++) {
+	  delete *it;
+  }
+  
+  sub_items.clear();
+  sub_items_mut.unlock();
 }
 
 void AmPlaylist::nextToItem(){
