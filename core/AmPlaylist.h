@@ -47,7 +47,7 @@ struct AmPlaylistItem
 		 AmAudio* record)
     : play(play), record(record) {}
 
-  ~AmPlaylistItem(){delete record; delete play;};
+  ~AmPlaylistItem(){};
 };
 
 /**

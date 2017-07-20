@@ -102,6 +102,8 @@ class ConferenceDialog : public AmSession
   set<string>                   sub_conf_ids;
   string                        company_id;
   auto_ptr<AmConferenceChannel> channel;
+  auto_ptr<AmConferenceChannel> companyChannel;
+  set<auto_ptr<AmConferenceChannel>> sub_channels;
 
   int                           state;
   string                        dtmf_seq;

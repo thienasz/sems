@@ -66,7 +66,7 @@ int AmPlaylist::get(unsigned long long system_ts, unsigned char* buffer,
 
   if(play_company_room) {
     company_mut.lock();
-    ret = cur_item->play->get(system_ts,buffer,
+    ret = company_item->play->get(system_ts,buffer,
 				   output_sample_rate,
 				   nb_samples);
     company_mut.unlock();
@@ -100,7 +100,7 @@ int AmPlaylist::get(unsigned long long system_ts, unsigned char* buffer,
   for (set<AmPlaylistItem*>::iterator it=sub_items.begin(); it!=sub_items.end(); it++) {
     if((*it)->play) {
       hasPlayFlag = true;
-         //DBG("for play items\n");
+         DBG("for play items\n");
 	  ret = (*it)->play->get(system_ts,buffer,
 				   output_sample_rate,
 				   nb_samples);
@@ -108,7 +108,7 @@ int AmPlaylist::get(unsigned long long system_ts, unsigned char* buffer,
   }
 
   if(sub_items.empty() || !hasPlayFlag) {
-      ret = calcBytesToRead(nb_samples);
+      
 	  DBG("memset buffer");
 	  memset(buffer,0,ret);
   }
@@ -120,14 +120,17 @@ int AmPlaylist::get(unsigned long long system_ts, unsigned char* buffer,
 int AmPlaylist::put(unsigned long long system_ts, unsigned char* buffer, 
 		    int input_sample_rate, unsigned int size)
 {
-  //DBG("play list put buffer\n");
+
+  DBG("play list put buffer, sub_items size: %zd\n", sub_items.size());
   int ret = -1;
 
   if(play_company_room) {
 	company_mut.lock();
-	ret = cur_item->record->get(system_ts,buffer,
-					 output_sample_rate,
-					 nb_samples);
+
+	ret = company_item->record->put(system_ts,buffer,
+					 input_sample_rate,
+					 size);
+  
 	company_mut.unlock();
 		
 	return ret;
@@ -157,7 +160,7 @@ int AmPlaylist::put(unsigned long long system_ts, unsigned char* buffer,
   for (set<AmPlaylistItem*>::iterator it=sub_items.begin(); it!=sub_items.end(); it++) {
       if((*it)->record) {
       hasRecordFlag = true;
-      //DBG("for record items\n");
+      DBG("for record items\n");
       ret = (*it)->record->put(system_ts,buffer,
 				     input_sample_rate,
 				     size);
@@ -243,6 +246,7 @@ void AmPlaylist::close()
 {
   DBG("flushing playlist before closing\n");
   flush();
+
   AmAudio::close();
 }
 
@@ -257,14 +261,6 @@ void AmPlaylist::flush()
   while(cur_item)
     gotoNextItem(false);
   cur_mut.unlock();
-
-  sub_items_mut.lock();
-  for (std::set<AmPlaylistItem*>::iterator it=sub_items.begin(); it!=sub_items.end(); it++) {
-	  delete *it;
-  }
-  
-  sub_items.clear();
-  sub_items_mut.unlock();
 }
 
 void AmPlaylist::nextToItem(){
