@@ -34,6 +34,8 @@
 
 #include <deque>
 #include <set>
+#include <map>
+using std::map;
 using std::set;
 using std::deque;
 /** \brief entry in an \ref AmPlaylist */
@@ -64,6 +66,7 @@ class AmPlaylist: public AmAudio
   AmMutex                sub_items_mut;
   map<string, AmPlaylistItem*>   sub_items;
   string                 activeChannel;
+  AmMutex                channel_mut;
   
   AmMutex                items_mut;
   deque<AmPlaylistItem*> items;
@@ -86,8 +89,8 @@ class AmPlaylist: public AmAudio
   int write(unsigned int user_ts, unsigned int size){ return -1; }
 
   /** override AmAudio */
-  int get(unsigned long long system_ts, unsigned char* buffer, 
-	  int output_sample_rate, unsigned int nb_samples);
+  //int get(unsigned long long system_ts, unsigned char* buffer, 
+//	  int output_sample_rate, unsigned int nb_samples);
 
   int put(unsigned long long system_ts, unsigned char* buffer, 
 	  int input_sample_rate, unsigned int size);
@@ -103,11 +106,16 @@ class AmPlaylist: public AmAudio
 
   void addToPlaylist(AmPlaylistItem* item);
   void addToPlayListFront(AmPlaylistItem* item);
-  void addToSubPlaylist(AmPlaylistItem* item);
+  void addToSubPlaylist(string conf, AmPlaylistItem* item);
   void addCompanyToPlaylist(AmPlaylistItem* item);
   void setPlayCompanyRoom(bool play);
   void nextToItem();
   void flush();
+  void setActiveChannel(string channel);
+  string getActiveChannel();
+int get(unsigned long long system_ts, unsigned char* buffer,
+          int output_sample_rate, unsigned int nb_samples);
+
 };
 
 /**

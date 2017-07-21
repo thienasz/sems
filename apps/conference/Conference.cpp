@@ -694,7 +694,7 @@ DBG("setup audio\n");
 	for (std::set<string>::iterator it=sub_conf_ids.begin(); it!=sub_conf_ids.end(); it++){
          DBG("add channel: %s\n", (*it).c_str());
 		AmConferenceChannel* subChannel = AmConferenceStatus::getChannel(*it,getLocalTag(),RTPStream()->getSampleRate());
- 		play_list.addToSubPlaylist(new AmPlaylistItem(subChannel,
+ 		play_list.addToSubPlaylist(*it, new AmPlaylistItem(subChannel,
                                                            subChannel));
 		sub_channels.insert(std::pair<string, AmConferenceChannel*>(*it,subChannel));
 	}	
@@ -728,8 +728,10 @@ void ConferenceDialog::onBye(const AmSipRequest& req)
 
 void ConferenceDialog::process(AmEvent* ev)
 {
+  DBG("proccess event\n");
   ConferenceEvent* ce = dynamic_cast<ConferenceEvent*>(ev);
   if(ce && (conf_id == ce->conf_id)){
+ DBG("event conf event id: %s\n", ce->conf_id.c_str());
     switch(ce->event_id){
     case ConfNewParticipant:
 
@@ -770,7 +772,7 @@ void ConferenceDialog::process(AmEvent* ev)
 	  #endif
       break;
 	case ConfActive:
-	  //DBG("########## ConfActive room: %s #########\n", ce.conf_id.c_str());
+	DBG("########## hello hello ConfActive room: %s #########\n", conf_id.c_str());
 //      conf_id_active.push(ce.conf_id);
 	case ConfDeactive:
 //	  DBG("########## ConfActive room: %s #########\n", ce.conf_id.c_str());
@@ -903,7 +905,19 @@ void ConferenceDialog::onDtmf(int event, int duration)
 
 	if(event == 1) {
 		DBG("DTMF event 1\n");
-		ConferenceFactory::connectToGroup(this);
+  bool posted =
+	AmEventDispatcher::instance()->
+	post("*301",  new ConferenceEvent(ConfActive, 1,"3333","3333"));
+
+  //  if(!posted)
+//	delete event;
+
+  // AmSessionContainer::instance()->postEvent(
+//					      "*301",
+//					      new ConferenceEvent(ConfActive,
+//								  1,"3333","3333")
+//					      );
+//		ConferenceFactory::connectToGroup(this);
 	}
 
     if(event == 2) {
@@ -987,14 +1001,27 @@ void ConferenceDialog::connectChannelByUri(const string& uri){
 
 void ConferenceDialog::connectToGroup(string conferenceActive){
   DBG("########## ConfActive room: %s #########\n", conferenceActive.c_str());
-  conf_id_active.push(conferenceActive);
+  conf_ids_active.insert(std::pair<string,bool>(conferenceActive, true));
+  if(conf_id_active != "")
+  play_list.setActiveChannel(conferenceActive);
 }
 
 void ConferenceDialog::cancelConnectGroup(string conferenceActive){
-  if(conf_id_active.empty())
+  if(conf_ids_active.empty())
   	return;
+
+  conf_ids_active.insert(std::pair<string,bool>(conferenceActive, false));
+  conf_id_active = "";
+
   DBG("########## ConfActive room: %s #########\n", conferenceActive.c_str());
-  conf_id_active.pop();
+  for (map<string, bool>::iterator it =conf_ids_active.begin(); it!=conf_ids_active.end(); ++it)
+  {
+    if(it->second == true){
+      play_list.setActiveChannel(it->first);
+      conf_id_active = it->first;
+    }
+  }
+  //conf_ids_active = "";
 }
 
 void ConferenceDialog::setCompanyId(string id){
@@ -1003,7 +1030,9 @@ void ConferenceDialog::setCompanyId(string id){
 }
 
 void ConferenceDialog::addSubConf(string id){
-  
+AmEventDispatcher::instance()->
+     addEventQueue("*301", this);
+  //AmSessionContainer::instance()->addSession("*301", this);
   sub_conf_ids.insert(id);
 }
 
@@ -1043,12 +1072,16 @@ void ConferenceDialog::connectToAll(){
 }
 
 int ConferenceDialog::writeStreams(unsigned long long ts, unsigned char *buffer) 
-{ 
+{
+#if 0 
   if(!conf_id_active.empty()){
-    DBG("active\n");
+    DBG("active: %s\n", conf_id_active.front().c_str());
+    DBG("active chl: %s\n", play_list.getActiveChannel().c_str());
+
+    if(play_list.getActiveChannel() != conf_id_active.front())
     play_list.setActiveChannel(conf_id_active.front());
   }
-  
+#endif   
   int res = 0;
   lockAudio();
 
@@ -1057,7 +1090,7 @@ int ConferenceDialog::writeStreams(unsigned long long ts, unsigned char *buffer)
     unsigned int f_size = stream->getFrameSize();
     int got = 10;
 #if 1
-    if (output) got = output->get(ts, buffer, stream->getSampleRate(), f_size);
+    if (output) got = play_list.get(ts, buffer, stream->getSampleRate(), f_size);
     if (got < 0) res = -1;
     if (got > 0){
       res = stream->put(ts, buffer, stream->getSampleRate(), got);

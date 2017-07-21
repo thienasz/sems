@@ -73,7 +73,7 @@ int AmPlaylist::get(unsigned long long system_ts, unsigned char* buffer,
 
 	return ret;
   }
-#if 0
+#if 1
   cur_mut.lock();
   updateCurrentItem();
 
@@ -95,7 +95,9 @@ int AmPlaylist::get(unsigned long long system_ts, unsigned char* buffer,
 
   cur_mut.unlock();
 #endif
+#if 0
   sub_items_mut.lock();
+  channel_mut.lock();
   bool hasPlayFlag = false;
   if(activeChannel == ""){
 	  for (map<string, AmPlaylistItem*>::iterator it=sub_items.begin(); it!=sub_items.end(); it++) {
@@ -123,8 +125,9 @@ int AmPlaylist::get(unsigned long long system_ts, unsigned char* buffer,
 	  //DBG("memset buffer");
 	  memset(buffer,0,ret);
   }
+  channel_mut.unlock();
   sub_items_mut.unlock();
-  
+#endif  
   return ret;
 }
 
@@ -186,9 +189,26 @@ int AmPlaylist::put(unsigned long long system_ts, unsigned char* buffer,
   return ret;
 }
 
+string AmPlaylist::getActiveChannel()
+{
+  DBG("get chl: %s\n", activeChannel.c_str());
+  return activeChannel;
+}
+
 void AmPlaylist::setActiveChannel(string channel)
 {
-  activeChannel = channel;
+DBG("set channel: %s\n", channel.c_str());
+map<string, AmPlaylistItem*>::iterator it = sub_items.find(channel);
+//if(!cur_item){
+    items_mut.lock();
+    if(it != sub_items.end())
+    cur_item = it->second;
+    items_mut.unlock();
+//  }
+
+//channel_mut.lock();
+//  activeChannel = channel;
+//channel_mut.unlock();
 }
 
 AmPlaylist::AmPlaylist(AmEventQueue* q)
@@ -228,12 +248,12 @@ void AmPlaylist::setPlayCompanyRoom(bool play)
   play_company_room = play;
 }
 
-void AmPlaylist::addToSubPlaylist(AmPlaylistItem* item)
+void AmPlaylist::addToSubPlaylist(string conf, AmPlaylistItem* item)
 {
   sub_items_mut.lock();
   DBG("enter add back size sub_items: %zd\n", sub_items.size());
 
-  sub_items.insert(item);
+  sub_items.insert(std::pair<string,AmPlaylistItem*>(conf,item));
   DBG("end add front size sub_items: %zd\n", sub_items.size());
 
   sub_items_mut.unlock();

@@ -37,7 +37,7 @@
 #include "AmConferenceChannel.h"
 #include "AmPlaylist.h"
 #include "AmRingTone.h"
-
+#include "AmEventDispatcher.h"
 #include <map>
 #include <string>
 using std::map;
@@ -99,7 +99,8 @@ class ConferenceDialog : public AmSession
   RtpStatus						rtp_status;
   bool                          isPtt;
   string                        conf_id;
-  queue<string>                 conf_id_active;
+  string 		 	 conf_id_active;
+  map<string, bool>             conf_ids_active;
   set<string>                   sub_conf_ids;
   string                        company_id;
   auto_ptr<AmConferenceChannel> channel;
