@@ -99,11 +99,12 @@ class ConferenceDialog : public AmSession
   RtpStatus						rtp_status;
   bool                          isPtt;
   string                        conf_id;
+  queue<string>                 conf_id_active;
   set<string>                   sub_conf_ids;
   string                        company_id;
   auto_ptr<AmConferenceChannel> channel;
   auto_ptr<AmConferenceChannel> companyChannel;
-  set<AmConferenceChannel*> sub_channels;
+  map<string, AmConferenceChannel*> sub_channels;
 
   int                           state;
   string                        dtmf_seq;
@@ -159,9 +160,12 @@ public:
   void cancelConnectCompany();
   void connectToAll();
   void connectToGroup();
+  void cancelConnectGroup();
   void setCompanyId(string id);
   string getCompanyId();
   void addSubConf(string id);  
+  set<string> getSubConf();
+  virtual int writeStreams(unsigned long long ts, unsigned char *buffer);
 #ifdef WITH_SAS_TTS
   void onZRTPEvent(zrtp_event_t event, zrtp_stream_ctx_t *stream_ctx);
 #endif
@@ -174,7 +178,9 @@ class ConferenceFactory : public AmSessionFactory
   static AmConfigReader cfg;
 
 public:
-  static std::multimap<string, ConferenceDialog*> ListConference;
+  static std::multimap<string, ConferenceDialog*> Comp2Session;
+  static std::multimap<string, ConferenceDialog*> Conf2Session;
+  
   static string AudioPath;
   static string LonelyUserFile;
   static string JoinSound;
@@ -185,6 +191,9 @@ public:
   static bool UseRFC4240Rooms;
 
   static void setupSessionTimer(AmSession* s);
+
+  static void connectToGroup();
+  static void cancelConnectGroup();
 
   static void connectToCompany(ConferenceDialog* conferenceActive);
   static void cancelConnectCompany(ConferenceDialog* conferenceActive);
