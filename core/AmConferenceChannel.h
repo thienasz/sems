@@ -74,8 +74,8 @@ class AmConferenceChannel: public AmAudio
   int write(unsigned int user_ts, unsigned int size){ return -1; }
 
   // override AmAudio
-  int get(unsigned long long system_ts, unsigned char* buffer, 
-	  int output_sample_rate, unsigned int nb_samples);
+//  int get(unsigned long long system_ts, unsigned char* buffer, 
+//	  int output_sample_rate, unsigned int nb_samples);
   int put(unsigned long long system_ts, unsigned char* buffer, 
 	  int input_sample_rate, unsigned int size);
 
@@ -84,6 +84,9 @@ class AmConferenceChannel: public AmAudio
 		      int channel_id, string channel_tag, bool own_channel);
 
   ~AmConferenceChannel();
+  
+   int get(unsigned long long system_ts, unsigned char* buffer,
+          int output_sample_rate, unsigned int nb_samples);
 
   string getConfID() { return conf_id; }
 };

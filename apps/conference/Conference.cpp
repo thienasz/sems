@@ -414,16 +414,16 @@ void ConferenceFactory::cancelConnectCompany(ConferenceDialog* conferenceActive)
 void ConferenceFactory::connectToGroup(ConferenceDialog* conferenceActive){
   DBG("enter connect connectToGroup\n");
   set<string> conf_ids = conferenceActive->getSubConf();
-
+  typedef std::multimap<string, ConferenceDialog*>::iterator mapit;
   for(set<string>::iterator it = conf_ids.begin();
       it != conf_ids.end(); it++)
   {
-	  typedef std::multimap<string, ConferenceDialog*>::iterator mapit;
+	 // typedef std::multimap<string, ConferenceDialog*>::iterator mapit;
 	  std::pair<mapit,mapit> range = ConferenceFactory::Conf2Session.equal_range(*it);
-	  mapit it = range.first;
-	  while (it != range.second){
-	  	it->second->connectToGroup(*it);
-	    ++it;
+	  mapit it2 = range.first;
+	  while (it2 != range.second){
+	  	it2->second->connectToGroup(*it);
+	    ++it2;
 	  } 
   }
 }
@@ -432,16 +432,16 @@ void ConferenceFactory::cancelConnectGroup(ConferenceDialog* conferenceActive){
   DBG("enter connect cancelConnectGroup\n");
   
   set<string> conf_ids = conferenceActive->getSubConf();
-
+  typedef std::multimap<string, ConferenceDialog*>::iterator mapit;
   for(set<string>::iterator it = conf_ids.begin();
       it != conf_ids.end(); it++)
   {
-	  typedef std::multimap<string, ConferenceDialog*>::iterator mapit;
+//	  typedef std::multimap<string, ConferenceDialog*>::iterator mapit;
 	  std::pair<mapit,mapit> range = ConferenceFactory::Conf2Session.equal_range(*it);
-	  mapit it = range.first;
-	  while (it != range.second){
-	  	it->second->cancelConnectGroup(*it);
-	    ++it;
+	  mapit it2 = range.first;
+	  while (it2 != range.second){
+	  	it2->second->cancelConnectGroup(*it);
+	    ++it2;
 	  }
   }
 }
@@ -769,11 +769,11 @@ void ConferenceDialog::process(AmEvent* ev)
 	  #endif
       break;
 	case ConfActive:
-	  DBG("########## ConfActive room: %s #########\n", ce.conf_id.c_str());
-      conf_id_active.push(ce.conf_id);
+	  //DBG("########## ConfActive room: %s #########\n", ce.conf_id.c_str());
+//      conf_id_active.push(ce.conf_id);
 	case ConfDeactive:
-	  DBG("########## ConfActive room: %s #########\n", ce.conf_id.c_str());
-      conf_id_active.pop();
+//	  DBG("########## ConfActive room: %s #########\n", ce.conf_id.c_str());
+ //     conf_id_active.pop();
 	break;
     default:
       break;
@@ -1043,15 +1043,20 @@ int ConferenceDialog::writeStreams(unsigned long long ts, unsigned char *buffer)
 { 
   DBG("writeStreams conference");
 
-  set<AmPlaylistItem*> sub_items = play_list.getSubItem();
+  //set<AmPlaylistItem*> sub_items = play_list.getSubItem();
 
   int res = 0;
+  int got = 0;
+  //AmConferenceChannel* chl = sub_channels.find(active_conf)->second;
   lockAudio();
   AmRtpAudio *stream = RTPStream();
   string active_conf = conf_id_active.front();
+
+  AmConferenceChannel* chl = sub_channels.find(active_conf)->second;
+
   if (stream->sendIntReached()) { // FIXME: shouldn't depend on checkInterval call before!
 		  unsigned int f_size = stream->getFrameSize();
-  		if (output) got = sub_channels.find(active_conf)->second->get(ts, buffer, stream->getSampleRate(), f_size);
+  		if (output) got = chl->get(ts, buffer, stream->getSampleRate(), f_size);
 	    if (got < 0) res = -1;
 	    if (got > 0){
 	      res = stream->put(ts, buffer, stream->getSampleRate(), got);

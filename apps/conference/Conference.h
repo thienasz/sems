@@ -159,8 +159,8 @@ public:
   void connectToCompany();
   void cancelConnectCompany();
   void connectToAll();
-  void connectToGroup();
-  void cancelConnectGroup();
+  void connectToGroup(string conferenceActive);
+  void cancelConnectGroup(string conferenceActive);
   void setCompanyId(string id);
   string getCompanyId();
   void addSubConf(string id);  
@@ -192,8 +192,8 @@ public:
 
   static void setupSessionTimer(AmSession* s);
 
-  static void connectToGroup();
-  static void cancelConnectGroup();
+  static void connectToGroup(ConferenceDialog* conferenceActive);
+  static void cancelConnectGroup(ConferenceDialog* conferenceActive);
 
   static void connectToCompany(ConferenceDialog* conferenceActive);
   static void cancelConnectCompany(ConferenceDialog* conferenceActive);
