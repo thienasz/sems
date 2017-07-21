@@ -657,7 +657,8 @@ DBG("setup audio\n");
 	for (std::set<string>::iterator it=sub_conf_ids.begin(); it!=sub_conf_ids.end(); it++){
          DBG("add channel: %s\n", (*it).c_str());
 		AmConferenceChannel* subChannel = AmConferenceStatus::getChannel(*it,getLocalTag(),RTPStream()->getSampleRate());
- 		play_list.addToSubPlaylist(subChannel, subChannel);
+ 		play_list.addToSubPlaylist(new AmPlaylistItem(subChannel,
+                                                           subChannel));
 		sub_channels.insert(subChannel);
 	}	
 #endif
