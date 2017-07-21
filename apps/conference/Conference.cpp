@@ -364,6 +364,7 @@ AmSession* ConferenceFactory::onInvite(const AmSipRequest& req, const string& ap
 	if(conf_id.length() == 3) {
 	  DBG("sub conf: %s - company: %s\n", conf_id.c_str(), company_id.c_str());
           s->addSubConf(company_id + conf_id);
+	  Conf2Session.insert(std::make_pair(company_id + conf_id, s));
 	  conf_id = "";
 	}
   }
@@ -900,11 +901,13 @@ void ConferenceDialog::onDtmf(int event, int duration)
 		isPtt = false;
 	}
 
-	if(event == 7) {
+	if(event == 1) {
+		DBG("DTMF event 1\n");
 		ConferenceFactory::connectToGroup(this);
 	}
 
-    if(event == 8) {
+    if(event == 2) {
+	  DBG("DTMF event 2\n");
 	  ConferenceFactory::cancelConnectGroup(this);
 	}
 #if 0
@@ -1041,29 +1044,28 @@ void ConferenceDialog::connectToAll(){
 
 int ConferenceDialog::writeStreams(unsigned long long ts, unsigned char *buffer) 
 { 
-  DBG("writeStreams conference");
-
-  //set<AmPlaylistItem*> sub_items = play_list.getSubItem();
-
+  if(!conf_id_active.empty()){
+    DBG("active\n");
+    play_list.setActiveChannel(conf_id_active.front());
+  }
+  
   int res = 0;
-  int got = 0;
-  //AmConferenceChannel* chl = sub_channels.find(active_conf)->second;
   lockAudio();
+
   AmRtpAudio *stream = RTPStream();
-  string active_conf = conf_id_active.front();
-
-  AmConferenceChannel* chl = sub_channels.find(active_conf)->second;
-
   if (stream->sendIntReached()) { // FIXME: shouldn't depend on checkInterval call before!
-		  unsigned int f_size = stream->getFrameSize();
-  		if (output) got = chl->get(ts, buffer, stream->getSampleRate(), f_size);
-	    if (got < 0) res = -1;
-	    if (got > 0){
-	      res = stream->put(ts, buffer, stream->getSampleRate(), got);
-	    }
- } 
+    unsigned int f_size = stream->getFrameSize();
+    int got = 10;
+#if 1
+    if (output) got = output->get(ts, buffer, stream->getSampleRate(), f_size);
+    if (got < 0) res = -1;
+    if (got > 0){
+      res = stream->put(ts, buffer, stream->getSampleRate(), got);
+    }
+#endif
+  }
+  
   unlockAudio();
-
   return res;
 }
 

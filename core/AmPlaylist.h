@@ -62,7 +62,8 @@ class AmPlaylist: public AmAudio
 {
 
   AmMutex                sub_items_mut;
-  set<AmPlaylistItem*>   sub_items;
+  map<string, AmPlaylistItem*>   sub_items;
+  string                 activeChannel;
   
   AmMutex                items_mut;
   deque<AmPlaylistItem*> items;

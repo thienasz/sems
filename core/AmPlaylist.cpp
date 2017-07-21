@@ -97,19 +97,30 @@ int AmPlaylist::get(unsigned long long system_ts, unsigned char* buffer,
 #endif
   sub_items_mut.lock();
   bool hasPlayFlag = false;
-  for (set<AmPlaylistItem*>::iterator it=sub_items.begin(); it!=sub_items.end(); it++) {
-    if((*it)->play) {
-      hasPlayFlag = true;
-         DBG("for play items\n");
-	  ret = (*it)->play->get(system_ts,buffer,
-				   output_sample_rate,
-				   nb_samples);
+  if(activeChannel == ""){
+	  for (map<string, AmPlaylistItem*>::iterator it=sub_items.begin(); it!=sub_items.end(); it++) {
+	    if(it->second->play) {
+	      hasPlayFlag = true;
+	         //DBG("for play items\n");
+		  ret = it->second->play->get(system_ts,buffer,
+					   output_sample_rate,
+					   nb_samples);
+		}
+	  }
+  }
+  else{
+    map<string, AmPlaylistItem*>::iterator map = sub_items.find(activeChannel);
+	if(map != sub_items.end()) {
+	  hasPlayFlag = true;
+      map->second->play->get(system_ts,buffer,
+					   output_sample_rate,
+					   nb_samples);
 	}
   }
 
   if(sub_items.empty() || !hasPlayFlag) {
       
-	  DBG("memset buffer");
+	  //DBG("memset buffer");
 	  memset(buffer,0,ret);
   }
   sub_items_mut.unlock();
@@ -121,7 +132,7 @@ int AmPlaylist::put(unsigned long long system_ts, unsigned char* buffer,
 		    int input_sample_rate, unsigned int size)
 {
 
-  DBG("play list put buffer, sub_items size: %zd\n", sub_items.size());
+  //DBG("play list put buffer, sub_items size: %zd\n", sub_items.size());
   int ret = -1;
 
   if(play_company_room) {
@@ -157,11 +168,11 @@ int AmPlaylist::put(unsigned long long system_ts, unsigned char* buffer,
   bool hasRecordFlag = false;
 
   sub_items_mut.lock();
-  for (set<AmPlaylistItem*>::iterator it=sub_items.begin(); it!=sub_items.end(); it++) {
-      if((*it)->record) {
+  for (map<string, AmPlaylistItem*>::iterator it=sub_items.begin(); it!=sub_items.end(); it++) {
+      if(it->second->record) {
       hasRecordFlag = true;
-      DBG("for record items\n");
-      ret = (*it)->record->put(system_ts,buffer,
+      //DBG("for record items\n");
+      ret = it->second->record->put(system_ts,buffer,
 				     input_sample_rate,
 				     size);
 	}
@@ -175,9 +186,14 @@ int AmPlaylist::put(unsigned long long system_ts, unsigned char* buffer,
   return ret;
 }
 
+void AmPlaylist::setActiveChannel(string channel)
+{
+  activeChannel = channel;
+}
+
 AmPlaylist::AmPlaylist(AmEventQueue* q)
   : AmAudio(new AmAudioFormat(CODEC_PCM16)),
-    ev_q(q), cur_item(0), play_company_room(false)
+    ev_q(q), cur_item(0), play_company_room(false), activeChannel("")
 {
   
 }
