@@ -67,6 +67,9 @@ class AmPlaylist: public AmAudio
   map<string, AmPlaylistItem*>   sub_items;
   string                 activeChannel;
   AmMutex                channel_mut;
+
+  bool                   is_put_channel;
+  AmMutex                put_channel_mut;
   
   AmMutex                items_mut;
   deque<AmPlaylistItem*> items;
@@ -111,8 +114,10 @@ class AmPlaylist: public AmAudio
   void setPlayCompanyRoom(bool play);
   void nextToItem();
   void flush();
-  void setActiveChannel(string channel);
+  void setActiveGetChannel(string channel);
+  void setDeactiveGetChannel(string channel);
   string getActiveChannel();
+  void PutToChannel(bool is_put);
 int get(unsigned long long system_ts, unsigned char* buffer,
           int output_sample_rate, unsigned int nb_samples);
 

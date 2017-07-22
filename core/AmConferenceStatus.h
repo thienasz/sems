@@ -39,8 +39,10 @@ class AmConferenceChannel;
 
 enum { ConfNewParticipant = 1,
        ConfParticipantLeft,
-       ConfActive,
-       ConfDeactive };
+       GroupActive,
+       GroupDeactive,
+       CompanyActive,
+       CompanyDeactive};
 
 /** \brief event in a conference*/
 struct ConferenceEvent: public AmEvent

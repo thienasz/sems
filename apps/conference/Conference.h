@@ -66,9 +66,18 @@ enum { DoConfConnect = 100,
 };
 
 enum RtpStatus { RTP_unkonw,
-	   RTP_ingroup,
-       RTP_incompany,
+	   RTP_getgroup,
+	   RTP_putgroup,
+       RTP_getcompany,
+       RTP_putcompany,
        RTP_inall
+};
+
+enum PttStatus { PTT_unkonw,
+	   PTT_group,
+	   PTT_cancel_group,
+       PTT_company,
+       PTT_cancel_company
 };
 
 /** \brief Event to trigger connecting/disconnecting between dialout session and main conference session */
@@ -95,16 +104,16 @@ class ConferenceDialog : public AmSession
   auto_ptr<AmRingTone>  RingTone;
   auto_ptr<AmRingTone>  ErrorTone;
 
-
   RtpStatus						rtp_status;
-  bool                          isPtt;
+  PttStatus 					ptt_status;
+  string						active_room;
+  bool                          isGroupPtt;
   string                        conf_id;
-  string 		 	 conf_id_active;
+  string 		 	 			conf_id_active;
   map<string, bool>             conf_ids_active;
   set<string>                   sub_conf_ids;
   string                        company_id;
   auto_ptr<AmConferenceChannel> channel;
-  auto_ptr<AmConferenceChannel> companyChannel;
   map<string, AmConferenceChannel*> sub_channels;
 
   int                           state;
@@ -160,8 +169,8 @@ public:
   void connectToCompany();
   void cancelConnectCompany();
   void connectToAll();
-  void connectToGroup(string conferenceActive);
-  void cancelConnectGroup(string conferenceActive);
+  void connectToGroup();
+  void cancelConnectGroup();
   void setCompanyId(string id);
   string getCompanyId();
   void addSubConf(string id);  
