@@ -64,8 +64,7 @@ int AmPlaylist::get(unsigned long long system_ts, unsigned char* buffer,
   //DBG("play list get buffer\n");
   int ret = -1;
 #if 1
-  if(company_item) {
-  	DBG("get buffer\n");
+  if(put_company_channel) {
     company_mut.lock();
     ret = company_item->play->get(system_ts,buffer,
 				   output_sample_rate,
@@ -76,7 +75,7 @@ int AmPlaylist::get(unsigned long long system_ts, unsigned char* buffer,
   }
 
 #endif
-#if 0
+#if 1
   cur_mut.lock();
   updateCurrentItem();
 
@@ -140,13 +139,11 @@ int AmPlaylist::put(unsigned long long system_ts, unsigned char* buffer,
 
   //DBG("play list put buffer, sub_items size: %zd\n", sub_items.size());
   int ret = -1;
-  if(!is_put_channel) {
-    return 0;
-  }
 
+  
 //DBG("vao put channel\n");
-#if 0
-  if(play_company_room) {
+#if 1
+  if(put_company_channel) {
 	company_mut.lock();
 
 	ret = company_item->record->put(system_ts,buffer,
@@ -158,6 +155,10 @@ int AmPlaylist::put(unsigned long long system_ts, unsigned char* buffer,
 	return ret;
   }
 #endif
+
+  if(!put_group_channel) {
+    return 0;
+  }
 
 #if 0
   cur_mut.lock();
@@ -199,7 +200,7 @@ int AmPlaylist::put(unsigned long long system_ts, unsigned char* buffer,
 
 AmPlaylist::AmPlaylist(AmEventQueue* q)
   : AmAudio(new AmAudioFormat(CODEC_PCM16)),
-    ev_q(q), cur_item(0), play_company_room(false), activeChannel(""), is_put_channel(false)
+    ev_q(q), cur_item(0), put_company_channel(false), activeChannel(""), put_group_channel(false)
 {
   
 }
@@ -231,7 +232,7 @@ void AmPlaylist::addCompanyToPlaylist(AmPlaylistItem* item)
 
 void AmPlaylist::setPlayCompanyRoom(bool play)
 {
-  play_company_room = play;
+  put_company_channel = play;
 }
 
 void AmPlaylist::addToSubPlaylist(string conf, AmPlaylistItem* item)
@@ -270,11 +271,19 @@ string AmPlaylist::getActiveChannel()
   return activeChannel;
 }
 
-void AmPlaylist::PutToChannel(bool is_put)
+void AmPlaylist::PutToGroupChannel(bool is_put)
 {
   DBG("get chl: %s\n", activeChannel.c_str());
   put_channel_mut.lock();
-  is_put_channel = is_put;
+  put_group_channel = is_put;
+  put_channel_mut.unlock();
+}
+
+void AmPlaylist::PutToCompanyChannel(bool is_put)
+{
+  DBG(" PutToCompanyChannel");
+  put_channel_mut.lock();
+  put_company_channel = is_put;
   put_channel_mut.unlock();
 }
 
@@ -309,6 +318,17 @@ void AmPlaylist::close()
   flush();
 
   AmAudio::close();
+}
+
+void AmPlaylist::flushChannel()
+{
+  company_mut.lock();
+  delete company_item;
+  company_mut.unlock();
+
+  sub_items_mut.lock();
+  sub_items.clear();
+  sub_items_mut.unlock();
 }
 
 void AmPlaylist::flush()

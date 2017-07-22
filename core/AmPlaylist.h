@@ -68,7 +68,7 @@ class AmPlaylist: public AmAudio
   string                 activeChannel;
   AmMutex                channel_mut;
 
-  bool                   is_put_channel;
+  bool                   put_group_channel;
   AmMutex                put_channel_mut;
   
   AmMutex                items_mut;
@@ -80,7 +80,7 @@ class AmPlaylist: public AmAudio
   AmMutex                company_mut;
   AmPlaylistItem*        company_item;
 
-  bool 					 play_company_room;
+  bool 					 put_company_channel;
   AmEventQueue*          ev_q;
 
   void updateCurrentItem();
@@ -114,10 +114,12 @@ class AmPlaylist: public AmAudio
   void setPlayCompanyRoom(bool play);
   void nextToItem();
   void flush();
+  void flushChannel();
   void setActiveGetChannel(string channel);
   void setDeactiveGetChannel(string channel);
   string getActiveChannel();
-  void PutToChannel(bool is_put);
+  void PutToGroupChannel(bool is_put);
+  void PutToCompanyChannel(bool is_put);
 int get(unsigned long long system_ts, unsigned char* buffer,
           int output_sample_rate, unsigned int nb_samples);
 

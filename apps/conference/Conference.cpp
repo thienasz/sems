@@ -359,7 +359,7 @@ AmSession* ConferenceFactory::onInvite(const AmSipRequest& req, const string& ap
 #if 1
   string conf_id = "";
 
-  s->addSubConf(company_id);
+  //s->addSubConf(company_id);
   for (std::string::iterator it=conf_ids.begin(); it!=conf_ids.end(); ++it){
     conf_id += *it;
 	if(conf_id.length() == 3) {
@@ -471,7 +471,7 @@ ConferenceDialog::~ConferenceDialog()
 
   // clean playlist items
   play_list.flush();
-
+  play_list.flushChannel();
 #ifdef WITH_SAS_TTS
   // garbage collect tts files - TODO: delete files
   for (vector<AmAudioFile*>::iterator it =
@@ -614,6 +614,7 @@ void ConferenceDialog::setupAudio()
 
   play_list.flush();
 
+#if 0
   if(dialout_channel.get()){
 
     DBG("adding dialout_channel to the playlist (dialedout = %i)\n",dialedout);
@@ -635,10 +636,14 @@ void ConferenceDialog::setupAudio()
     else
 	play_list.addToPlaylist(new AmPlaylistItem(channel.get(),
 						   channel.get()));
+#endif
 
 DBG("setup audio\n");
 #if 1
-	
+	channel.reset(AmConferenceStatus::getChannel(company_id,getLocalTag(),RTPStream()->getSampleRate()));
+	play_list.addCompanyToPlaylist(new AmPlaylistItem(channel.get(),
+							   channel.get()));
+
 	for (std::set<string>::iterator it=sub_conf_ids.begin(); it!=sub_conf_ids.end(); it++){
          DBG("add channel: %s\n", (*it).c_str());
 		AmConferenceChannel* subChannel = AmConferenceStatus::getChannel(*it,getLocalTag(),RTPStream()->getSampleRate());
@@ -958,7 +963,7 @@ void ConferenceDialog::connectToGroup(){
   if(ptt_status == PTT_group || ptt_status == PTT_company)
   	return;
   
-  play_list.PutToChannel(true);
+  play_list.PutToGroupChannel(true);
   for(set<string>::iterator it = sub_conf_ids.begin(); it != sub_conf_ids.end(); it++) {
 	AmConferenceStatus::postConferenceEvent(*it, GroupActive, getLocalTag());
   }
@@ -969,7 +974,7 @@ void ConferenceDialog::cancelConnectGroup(){
   if(ptt_status != PTT_group)
   	return;
   
-  play_list.PutToChannel(false);
+  play_list.PutToGroupChannel(false);
   for(set<string>::iterator it = sub_conf_ids.begin(); it != sub_conf_ids.end(); it++) {
 	AmConferenceStatus::postConferenceEvent(*it, GroupDeactive, getLocalTag());
   }
@@ -980,7 +985,7 @@ void ConferenceDialog::connectToCompany(){
   if(ptt_status == PTT_company)
 	  return;
 
-  play_list.PutToChannel(true);
+  play_list.PutToCompanyChannel(true);
   AmConferenceStatus::postConferenceEvent(company_id, CompanyActive, getLocalTag());
   ptt_status = PTT_company;
 }
@@ -989,7 +994,7 @@ void ConferenceDialog::cancelConnectCompany(){
   if(ptt_status != PTT_company)
 		return;
 
-  play_list.PutToChannel(false);
+  play_list.PutToCompanyChannel(false);
   AmConferenceStatus::postConferenceEvent(company_id, CompanyDeactive, getLocalTag());
   ptt_status = PTT_cancel_company;
 }
