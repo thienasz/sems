@@ -81,6 +81,7 @@ class AmPlaylist: public AmAudio
   AmPlaylistItem*        company_item;
 
   bool 					 put_company_channel;
+  bool 					 get_company_channel;
   AmEventQueue*          ev_q;
 
   void updateCurrentItem();
