@@ -683,7 +683,7 @@ void ConferenceDialog::process(AmEvent* ev)
 {
   DBG("proccess event\n");
   ConferenceEvent* ce = dynamic_cast<ConferenceEvent*>(ev);
-  if(ce && ((conf_id == ce->conf_id) || (sub_conf_ids.find(ce->conf_id) != sub_conf_ids.end()))){
+  if(ce && ((company_id == ce->conf_id) || (conf_id == ce->conf_id) || (sub_conf_ids.find(ce->conf_id) != sub_conf_ids.end()))){
  DBG("event conf event id: %s\n", ce->conf_id.c_str());
     switch(ce->event_id){
     case ConfNewParticipant:
@@ -731,6 +731,7 @@ void ConferenceDialog::process(AmEvent* ev)
 		  break;
 		}
 	    active_room = ce->conf_id;
+		ptt_status = PTT_group;
 	    play_list.setActiveGetChannel(ce->conf_id);
     break;
 	case CompanyActive:
@@ -739,21 +740,27 @@ void ConferenceDialog::process(AmEvent* ev)
 		  //send busy
 		  break;
 		}
-	        active_room = ce->conf_id;
+	    active_room = ce->conf_id;
+		ptt_status = PTT_company;
 		play_list.setActiveGetCompanyChannel(true);
 	break;
 	case GroupDeactive:
 		DBG("########## GroupDeactive room: %s ce %s #########\n", conf_id.c_str(), ce->conf_id.c_str());
-                play_list.setDeactiveGetChannel(ce->conf_id);
-                if(active_room == ce->conf_id)
-                   active_room = "";
+                
+        if(active_room == ce->conf_id)
+           active_room = "";
+
+		ptt_status = PTT_cancel_group;
+		play_list.setDeactiveGetChannel(ce->conf_id);
 
         break;
 	case CompanyDeactive:
 		DBG("########## CompanyDeactive room: %s ce %s #########\n", company_id.c_str(), ce->conf_id.c_str());
-		play_list.setActiveGetCompanyChannel(false);
 		if(active_room == ce->conf_id)
 		   active_room = "";
+		ptt_status = PTT_cancel_company;
+
+		play_list.setActiveGetCompanyChannel(false);
 	break;
 
     default:

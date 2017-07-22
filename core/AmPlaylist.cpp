@@ -64,7 +64,7 @@ int AmPlaylist::get(unsigned long long system_ts, unsigned char* buffer,
   //DBG("play list get buffer\n");
   int ret = 0;
 #if 1
-  if(put_company_channel) {
+  if(get_company_channel) {
     company_mut.lock();
     DBG("get company");
     ret = company_item->play->get(system_ts,buffer,
