@@ -645,7 +645,7 @@ DBG("setup audio\n");
 							   channel.get()));
 
 	for (std::set<string>::iterator it=sub_conf_ids.begin(); it!=sub_conf_ids.end(); it++){
-         DBG("add channel: %s\n", (*it).c_str());
+                DBG("add channel: %s\n", (*it).c_str());
 		AmConferenceChannel* subChannel = AmConferenceStatus::getChannel(*it,getLocalTag(),RTPStream()->getSampleRate());
  		play_list.addToSubPlaylist(*it, new AmPlaylistItem(subChannel,
                                                            subChannel));
@@ -739,11 +739,16 @@ void ConferenceDialog::process(AmEvent* ev)
 		  //send busy
 		  break;
 		}
-	    active_room = ce->conf_id;
+	        active_room = ce->conf_id;
 		play_list.setActiveGetCompanyChannel(true);
 	break;
 	case GroupDeactive:
 		DBG("########## GroupDeactive room: %s ce %s #########\n", conf_id.c_str(), ce->conf_id.c_str());
+                play_list.setDeactiveGetChannel(ce->conf_id);
+                if(active_room == ce->conf_id)
+                   active_room = "";
+
+        break;
 	case CompanyDeactive:
 		DBG("########## CompanyDeactive room: %s ce %s #########\n", company_id.c_str(), ce->conf_id.c_str());
 		play_list.setActiveGetCompanyChannel(false);
