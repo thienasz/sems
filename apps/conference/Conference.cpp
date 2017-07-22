@@ -652,7 +652,7 @@ DBG("setup audio\n");
 		sub_channels.insert(std::pair<string, AmConferenceChannel*>(*it,subChannel));
 	}	
 #endif
-  }
+ // }
 
   DBG("setup audio conf_id: %s", conf_id.c_str());
   //channel.reset(AmConferenceStatus::getChannel("*302",getLocalTag(),RTPStream()->getSampleRate()));

@@ -62,7 +62,7 @@ int AmPlaylist::get(unsigned long long system_ts, unsigned char* buffer,
 		    int output_sample_rate, unsigned int nb_samples)
 {
   //DBG("play list get buffer\n");
-  int ret = -1;
+  int ret = 0;
 #if 1
   if(put_company_channel) {
     company_mut.lock();
@@ -70,12 +70,25 @@ int AmPlaylist::get(unsigned long long system_ts, unsigned char* buffer,
 				   output_sample_rate,
 				   nb_samples);
     company_mut.unlock();
-
-	return ret;
+    return ret;
   }
 
 #endif
-#if 1
+//cur_mut.lock();
+if(cur_item && cur_item->play){
+cur_mut.lock();
+DBG("get group\n");
+ret = cur_item->play->get(system_ts,buffer,
+                                   output_sample_rate,
+                                   nb_samples);
+cur_mut.unlock();
+}else {
+ // ret = calcBytesToRead(nb_samples);
+ // DBG("memset buffer");
+ // memset(buffer,0,ret);
+}
+//cur_mut.unlock();
+#if 0
   cur_mut.lock();
   updateCurrentItem();
 
@@ -138,7 +151,7 @@ int AmPlaylist::put(unsigned long long system_ts, unsigned char* buffer,
 {
 
   //DBG("play list put buffer, sub_items size: %zd\n", sub_items.size());
-  int ret = -1;
+  int ret = 0;
 
   
 //DBG("vao put channel\n");
@@ -155,10 +168,6 @@ int AmPlaylist::put(unsigned long long system_ts, unsigned char* buffer,
 	return ret;
   }
 #endif
-
-  if(!put_group_channel) {
-    return 0;
-  }
 
 #if 0
   cur_mut.lock();
@@ -177,7 +186,8 @@ int AmPlaylist::put(unsigned long long system_ts, unsigned char* buffer,
     ret = size;
     
   cur_mut.unlock();
-#endif 
+#endif
+if(put_group_channel){ 
   bool hasRecordFlag = false;
   sub_items_mut.lock();
   for (map<string, AmPlaylistItem*>::iterator it=sub_items.begin(); it!=sub_items.end(); it++) {
@@ -194,6 +204,7 @@ int AmPlaylist::put(unsigned long long system_ts, unsigned char* buffer,
       ret = size;
   }
   sub_items_mut.unlock();
+}
   
   return ret;
 }
@@ -294,7 +305,8 @@ void AmPlaylist::setActiveGetChannel(string channel)
     items_mut.lock();
     if(it != sub_items.end()) {
 	  activeChannel = it->first;
-      company_item = it->second;
+      cur_item = it->second;
+      DBG("set ok\n");
     }
     items_mut.unlock();
 }
@@ -304,10 +316,10 @@ void AmPlaylist::setDeactiveGetChannel(string channel)
 {
   DBG("setDeactiveGetChannel: %s\n", channel.c_str());
   map<string, AmPlaylistItem*>::iterator it = sub_items.find(channel);
-  if(it->second == company_item) {
-  	DBG("setDeactiveGetChannel company_item: %s\n", channel.c_str());
+  if(it->second == cur_item) {
+  	DBG("setDeactiveGetChannel ok: %s\n", channel.c_str());
 	items_mut.lock();
-  	company_item = NULL;
+  	cur_item = NULL;
   	items_mut.unlock();
   }
 }
