@@ -139,9 +139,11 @@ int AmPlaylist::put(unsigned long long system_ts, unsigned char* buffer,
 
   //DBG("play list put buffer, sub_items size: %zd\n", sub_items.size());
   int ret = -1;
-  if(is_put_channel) {
+  if(!is_put_channel) {
     return 0;
   }
+
+//DBG("vao put channel\n");
 #if 0
   if(play_company_room) {
 	company_mut.lock();
@@ -179,7 +181,7 @@ int AmPlaylist::put(unsigned long long system_ts, unsigned char* buffer,
   for (map<string, AmPlaylistItem*>::iterator it=sub_items.begin(); it!=sub_items.end(); it++) {
       if(it->second->record) {
       hasRecordFlag = true;
-      //DBG("for record items\n");
+      DBG("put to room: %s \n", it->first.c_str());
       ret = it->second->record->put(system_ts,buffer,
 				     input_sample_rate,
 				     size);
@@ -292,7 +294,7 @@ void AmPlaylist::setDeactiveGetChannel(string channel)
 {
   DBG("set channel: %s\n", channel.c_str());
   map<string, AmPlaylistItem*>::iterator it = sub_items.find(channel);
-  if(it != sub_items.end() && it == cur_item) {
+  if(it->second == cur_item) {
 	items_mut.lock();
   	cur_item = NULL;
   	items_mut.unlock();

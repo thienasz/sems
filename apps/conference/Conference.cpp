@@ -447,7 +447,7 @@ ConferenceDialog::ConferenceDialog(const string& conf_id,
     allow_dialout(false),
     isGroupPtt(false),
     rtp_status(RTP_unkonw),
-    active_room()
+    active_room("")
 {
   dialedout = this->dialout_channel.get() != 0;
   RTPStream()->setPlayoutType(ConferenceFactory::m_PlayoutType);
@@ -578,7 +578,7 @@ void ConferenceDialog::onInvite(const AmSipRequest& req)
 
 void ConferenceDialog::onSessionStart()
 {
-  rtp_status = RTP_ingroup;
+  //rtp_status = RTP_ingroup;
   
   setupAudio();
   DBG("on start conference dialog\n");
@@ -678,7 +678,7 @@ void ConferenceDialog::process(AmEvent* ev)
 {
   DBG("proccess event\n");
   ConferenceEvent* ce = dynamic_cast<ConferenceEvent*>(ev);
-  if(ce && ((conf_id == ce->conf_id) || (sub_conf_ids.find(ce->conf_id) != sub_conf_ids.end())){
+  if(ce && ((conf_id == ce->conf_id) || (sub_conf_ids.find(ce->conf_id) != sub_conf_ids.end()))){
  DBG("event conf event id: %s\n", ce->conf_id.c_str());
     switch(ce->event_id){
     case ConfNewParticipant:
@@ -721,7 +721,7 @@ void ConferenceDialog::process(AmEvent* ev)
       break;
 	case GroupActive:
 		DBG("########## hello hello GroupActive room: %s ce %s #########\n", conf_id.c_str(), ce->conf_id.c_str());
-	    if(active_room || active_room != "") {
+	    if(active_room != "") {
 		  //send busy
 		  break;
 		}
@@ -738,7 +738,7 @@ void ConferenceDialog::process(AmEvent* ev)
 		play_list.setActiveGetChannel(ce->conf_id);
 	break;
 	case GroupDeactive:
-		DBG("########## GroupDeactive room: %s ce %s #########\n", ce.conf_id.c_str(), ce->conf_id.c_str());
+		DBG("########## GroupDeactive room: %s ce %s #########\n", conf_id.c_str(), ce->conf_id.c_str());
 	case CompanyDeactive:
 		DBG("########## CompanyDeactive room: %s ce %s #########\n", company_id.c_str(), ce->conf_id.c_str());
 		play_list.setDeactiveGetChannel(ce->conf_id);
@@ -861,12 +861,12 @@ void ConferenceDialog::onDtmf(int event, int duration)
     //dtmf_seq += dtmf2str(event);
 	if(event == DTMF_company) {
 		DBG("DTMF_company\n");
-		connectToCompany()
+		connectToCompany();
 	}
 
 	if(event == DTMF_cancel_company){
 		DBG("DTMF_cancel_company\n");
-		cancelConnectCompany()
+		cancelConnectCompany();
 	}
 
 	if(event == DTMF_group) {
@@ -954,7 +954,7 @@ void ConferenceDialog::connectChannelByUri(const string& uri){
 }
 
 void ConferenceDialog::connectToGroup(){
-  DBG("########## GroupActive room: %s #########\n", conferenceActive.c_str());
+ // DBG("########## GroupActive room: %s #########\n", conferenceActive.c_str());
   if(ptt_status == PTT_group || ptt_status == PTT_company)
   	return;
   
@@ -1015,12 +1015,12 @@ string ConferenceDialog::getCompanyId(){
 }
 
 void ConferenceDialog::connectToAll(){
-  if(rtp_status != RTP_ingroup)
-  	return;
+  //if(rtp_status != RTP_ingroup)
+  //	return;
   
-  connectChannelByUri("*30*");
+  //connectChannelByUri("*30*");
   
-  rtp_status = RTP_inall;
+  //rtp_status = RTP_inall;
 }
 
 int ConferenceDialog::writeStreams(unsigned long long ts, unsigned char *buffer) 
