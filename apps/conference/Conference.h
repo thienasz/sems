@@ -73,6 +73,14 @@ enum RtpStatus { RTP_unkonw,
        RTP_inall
 };
 
+enum RtpRecv { RTP_unkonw,
+	   RTP_group,
+	   RTP_cancel_group,
+       RTP_company,
+       RTP_cancel_company,
+       RTP_inall
+};
+
 enum PttStatus { PTT_unkonw,
 	   PTT_group,
 	   PTT_cancel_group,
@@ -105,6 +113,7 @@ class ConferenceDialog : public AmSession
   auto_ptr<AmRingTone>  ErrorTone;
 
   RtpStatus						rtp_status;
+  RtpRecv						rtp_recv;
   PttStatus 					ptt_status;
   string						active_room;
   bool                          isGroupPtt;
