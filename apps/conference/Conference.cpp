@@ -461,13 +461,12 @@ ConferenceDialog::ConferenceDialog(const string& conf_id,
 ConferenceDialog::~ConferenceDialog()
 {
   DBG("ConferenceDialog::~ConferenceDialog()\n");
-  if(isGroupPtt){
-	ConferenceFactory::cancelConnectAll(this);
-  }
 
   if(ptt_status == PTT_company) {
+  	DBG("ConferenceDialog::~ConferenceDialog() cancel connect company\n");
     cancelConnectCompany();
   } else if(ptt_status == PTT_group) {
+  	DBG("ConferenceDialog::~ConferenceDialog() cancel connect group\n");
     cancelConnectGroup();
   }
 
@@ -729,6 +728,7 @@ void ConferenceDialog::process(AmEvent* ev)
 	case GroupActive:
 		DBG("########## hello hello GroupActive room: %s ce %s #########\n", conf_id.c_str(), ce->conf_id.c_str());
 	    if(active_room != "") {
+			DBG("send busy\n");
 		  //send busy
 		  break;
 		}
@@ -736,18 +736,25 @@ void ConferenceDialog::process(AmEvent* ev)
 		if(ptt_status != PTT_group) {
 		  rtp_recv = RTP_group;
 	      play_list.setActiveGetChannel(ce->conf_id);
+		} else {
+		  DBG("is not PTT_group\n");
 		}
     break;
 	case CompanyActive:
 		DBG("########## CompanyActive room: %s ce %s #########\n", company_id.c_str(), ce->conf_id.c_str());
 		if(active_room == company_id) {
 		  //send busy
+		  DBG("send busy\n");
 		  break;
 		}
+		
+		cancelConnectGroup();
 	    active_room = ce->conf_id;
 		if(ptt_status != PTT_company) {
 		  rtp_recv = RTP_company;
 		  play_list.setActiveGetCompanyChannel(true);
+		} else {
+		  DBG("is not PTT_company\n");
 		}
 	break;
 	case GroupDeactive:
@@ -759,6 +766,8 @@ void ConferenceDialog::process(AmEvent* ev)
 		if(ptt_status != PTT_cancel_group) {
 		  rtp_recv = RTP_cancel_group;
 		  play_list.setDeactiveGetChannel(ce->conf_id);
+		} else {
+		  DBG("is not PTT_cancel_group\n");
 		}
 
         break;
@@ -770,6 +779,8 @@ void ConferenceDialog::process(AmEvent* ev)
 		if(ptt_status != PTT_cancel_company) {
 		  rtp_recv = RTP_cancel_company;
   		  play_list.setActiveGetCompanyChannel(false);
+		} else {
+		  DBG("is not PTT_cancel_company\n");
 		}
 	break;
 
@@ -897,12 +908,12 @@ void ConferenceDialog::onDtmf(int event, int duration)
 	}
 
 	if(event == DTMF_group) {
-		DBG("DTMF event 1\n");
+		DBG("DTMF DTMF_group\n");
 		connectToGroup();
 	}
 
     if(event == DTMF_cancel_group) {
-		DBG("DTMF event 1\n");
+		DBG("DTMF DTMF_cancel_group\n");
 		cancelConnectGroup();
 	}
 #if 0
@@ -981,12 +992,11 @@ void ConferenceDialog::connectChannelByUri(const string& uri){
 }
 
 void ConferenceDialog::connectToGroup(){
- // DBG("########## GroupActive room: %s #########\n", conferenceActive.c_str());
+  DBG("connectToGroup ptt: %d - rtp_recv: %d\n", ptt_status, rtp_recv);
   if(rtp_recv == RTP_group || rtp_recv == RTP_company || ptt_status == PTT_group || ptt_status == PTT_company)
   	return;
   bool has_active = false;
   for(set<string>::iterator it = sub_conf_ids.begin(); it != sub_conf_ids.end(); it++) {
-    //if has one conference active -> return
 	if(!AmConferenceStatus::setActiveConferenceReturnStatus(*it, true)) {
       has_active = true;
 	  break;
@@ -1001,19 +1011,25 @@ void ConferenceDialog::connectToGroup(){
   }
 
   if(has_active) {
+  	DBG("has one active\n");
     //has one active - send busy
 	return;
   }
-  
+
+  DBG("start connectToGroup\n");
   play_list.PutToGroupChannel(true);
   
   ptt_status = PTT_group;
+  DBG("end connectToGroup\n");
 }
 
 void ConferenceDialog::cancelConnectGroup(){
+  DBG("cancelConnectGroup ptt: %d - rtp_recv: %d", ptt_status, rtp_recv);
+
   if(ptt_status != PTT_group)
   	return;
-  
+
+  DBG("start cancelConnectGroup\n");
   play_list.PutToGroupChannel(false);
   for(set<string>::iterator it = sub_conf_ids.begin(); it != sub_conf_ids.end(); it++) {
 	AmConferenceStatus::postConferenceEvent(*it, GroupDeactive, getLocalTag());
@@ -1021,6 +1037,7 @@ void ConferenceDialog::cancelConnectGroup(){
   }
   
   ptt_status = PTT_cancel_group;
+  DBG("end cancelConnectGroup\n");
 }
 
 void ConferenceDialog::connectToCompany(){
@@ -1040,17 +1057,21 @@ void ConferenceDialog::connectToCompany(){
   AmConferenceStatus::postConferenceEvent(company_id, CompanyActive, getLocalTag());
   
   ptt_status = PTT_company;
+  DBG("end connect\n");
 }
 
 void ConferenceDialog::cancelConnectCompany(){
+  DBG("cancelConnectCompany ptt: %d - rtp_recv: %d", ptt_status, rtp_recv);
   if(ptt_status != PTT_company)
 		return;
-  
+
+  DBG("start cancelConnectCompany\n");
   play_list.PutToCompanyChannel(false);
   AmConferenceStatus::postConferenceEvent(company_id, CompanyDeactive, getLocalTag());
   AmConferenceStatus::setActiveConferenceReturnStatus(company_id, false);
   
   ptt_status = PTT_cancel_company;
+  DBG("end cancelConnectCompany\n");
 }
 
 void ConferenceDialog::setCompanyId(string id){

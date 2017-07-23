@@ -288,7 +288,7 @@ string AmPlaylist::getActiveChannel()
 
 void AmPlaylist::PutToGroupChannel(bool is_put)
 {
-  DBG("get chl: %s\n", activeChannel.c_str());
+  DBG("PutToGroupChannel chl: %s\n", activeChannel.c_str());
   put_channel_mut.lock();
   put_group_channel = is_put;
   put_channel_mut.unlock();
@@ -296,7 +296,7 @@ void AmPlaylist::PutToGroupChannel(bool is_put)
 
 void AmPlaylist::PutToCompanyChannel(bool is_put)
 {
-  DBG(" PutToCompanyChannel");
+  DBG(" PutToCompanyChannel\n");
   put_channel_mut.lock();
   put_company_channel = is_put;
   put_channel_mut.unlock();
@@ -346,6 +346,8 @@ void AmPlaylist::close()
 
 void AmPlaylist::flushChannel()
 {
+  DBG("flushChannel\n");
+
   company_mut.lock();
   delete company_item;
   company_mut.unlock();
