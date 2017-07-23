@@ -446,8 +446,8 @@ ConferenceDialog::ConferenceDialog(const string& conf_id,
     state(CS_normal),
     allow_dialout(false),
     isGroupPtt(false),
-    rtp_status(RTP_unkonw),
-    rtp_recv(RTP_c_unknonw),
+    rtp_status(RTP_unknown),
+    rtp_recv(RTP_c_unknown),
     ptt_status(PTT_unkonw),
     active_room("")
 {
@@ -733,8 +733,10 @@ void ConferenceDialog::process(AmEvent* ev)
 		  break;
 		}
 	    active_room = ce->conf_id;
-		rtp_recv = RTP_group;
-	    play_list.setActiveGetChannel(ce->conf_id);
+		if(ptt_status != PTT_group) {
+		  rtp_recv = RTP_group;
+	      play_list.setActiveGetChannel(ce->conf_id);
+		}
     break;
 	case CompanyActive:
 		DBG("########## CompanyActive room: %s ce %s #########\n", company_id.c_str(), ce->conf_id.c_str());
@@ -743,8 +745,10 @@ void ConferenceDialog::process(AmEvent* ev)
 		  break;
 		}
 	    active_room = ce->conf_id;
-		rtp_recv = RTP_company;
-		play_list.setActiveGetCompanyChannel(true);
+		if(ptt_status != PTT_company) {
+		  rtp_recv = RTP_company;
+		  play_list.setActiveGetCompanyChannel(true);
+		}
 	break;
 	case GroupDeactive:
 		DBG("########## GroupDeactive room: %s ce %s #########\n", conf_id.c_str(), ce->conf_id.c_str());
@@ -752,17 +756,21 @@ void ConferenceDialog::process(AmEvent* ev)
         if(active_room == ce->conf_id)
            active_room = "";
 
-		rtp_recv = RTP_cancel_group;
-		play_list.setDeactiveGetChannel(ce->conf_id);
+		if(ptt_status != PTT_cancel_group) {
+		  rtp_recv = RTP_cancel_group;
+		  play_list.setDeactiveGetChannel(ce->conf_id);
+		}
 
         break;
 	case CompanyDeactive:
 		DBG("########## CompanyDeactive room: %s ce %s #########\n", company_id.c_str(), ce->conf_id.c_str());
 		if(active_room == ce->conf_id)
 		   active_room = "";
-		rtp_recv = RTP_cancel_company;
 
-		play_list.setActiveGetCompanyChannel(false);
+		if(ptt_status != PTT_cancel_company) {
+		  rtp_recv = RTP_cancel_company;
+  		  play_list.setActiveGetCompanyChannel(false);
+		}
 	break;
 
     default:

@@ -65,7 +65,7 @@ enum { DoConfConnect = 100,
        DoConfError
 };
 
-enum RtpStatus { RTP_unkonw,
+enum RtpStatus { RTP_unknown,
 	   RTP_getgroup,
 	   RTP_putgroup,
        RTP_getcompany,
@@ -73,7 +73,7 @@ enum RtpStatus { RTP_unkonw,
        RTP_inall
 };
 
-enum RtpRecv { RTP_c_unkonw,
+enum RtpRecv { RTP_c_unknown,
 	   RTP_group,
 	   RTP_cancel_group,
        RTP_company,
