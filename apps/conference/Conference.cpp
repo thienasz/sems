@@ -447,6 +447,7 @@ ConferenceDialog::ConferenceDialog(const string& conf_id,
     allow_dialout(false),
     isGroupPtt(false),
     rtp_status(RTP_unkonw),
+    ptt_status(PTT_unkonw),
     active_room("")
 {
   dialedout = this->dialout_channel.get() != 0;

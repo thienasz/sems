@@ -73,12 +73,11 @@ enum RtpStatus { RTP_unkonw,
        RTP_inall
 };
 
-enum RtpRecv { RTP_unkonw,
+enum RtpRecv { RTP_rc_unkonw,
 	   RTP_group,
 	   RTP_cancel_group,
        RTP_company,
-       RTP_cancel_company,
-       RTP_inall
+       RTP_cancel_company
 };
 
 enum PttStatus { PTT_unkonw,
