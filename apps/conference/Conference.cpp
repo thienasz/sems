@@ -1024,14 +1024,18 @@ void ConferenceDialog::cancelConnectGroup(){
 }
 
 void ConferenceDialog::connectToCompany(){
+  DBG("connect company ptt: %d - rtp_recv: %d", ptt_status, rtp_recv);
   if(ptt_status == PTT_company || rtp_recv == RTP_company)
 	return;
 
   if(!AmConferenceStatus::setActiveConferenceReturnStatus(company_id, true)) {
-  	//has one active - send busy
+    DBG("Has one active\n");    
+    //has one active - send busy
     return;
   }
-  
+ 
+  cancelConnectGroup(); 
+  DBG("start connect\n");
   play_list.PutToCompanyChannel(true);
   AmConferenceStatus::postConferenceEvent(company_id, CompanyActive, getLocalTag());
   

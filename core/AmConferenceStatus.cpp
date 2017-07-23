@@ -128,7 +128,7 @@ bool AmConferenceStatus::setActiveConferenceReturnStatus(const string& cid, bool
 
   if(it != cid2status.end()){
 	AmConferenceStatus* st = it->second;
-	active = st->setActive(active);
+	success = st->setActive(active);
   }
   else {
 	ERROR("conference '%s' does not exists\n",cid.c_str());
@@ -143,7 +143,7 @@ bool AmConferenceStatus::setActiveConferenceReturnStatus(const string& cid, bool
 //
 
 AmConferenceStatus::AmConferenceStatus(const string& conference_id)
-  : sessions(), channels(), conf_id(conference_id), mixer()
+  : sessions(), channels(), conf_id(conference_id), mixer(), conf_active(false)
 {
 }
 
