@@ -984,11 +984,28 @@ void ConferenceDialog::connectToGroup(){
  // DBG("########## GroupActive room: %s #########\n", conferenceActive.c_str());
   if(rtp_recv == RTP_group || rtp_recv == RTP_company || ptt_status == PTT_group || ptt_status == PTT_company)
   	return;
+  bool has_active = false;
+  for(set<string>::iterator it = sub_conf_ids.begin(); it != sub_conf_ids.end(); it++) {
+    //if has one conference active -> return
+	if(!AmConferenceStatus::setActiveConferenceReturnStatus(*it, true)) {
+      has_active = true;
+	  break;
+	}
+  }
+  for(set<string>::iterator it = sub_conf_ids.begin(); it != sub_conf_ids.end(); it++) {
+  	if(has_active) {
+	  AmConferenceStatus::setActiveConferenceReturnStatus(*it, false);
+	} else {
+	  AmConferenceStatus::postConferenceEvent(*it, GroupActive, getLocalTag());
+	}	
+  }
+
+  if(has_active) {
+    //has one active - send busy
+	return;
+  }
   
   play_list.PutToGroupChannel(true);
-  for(set<string>::iterator it = sub_conf_ids.begin(); it != sub_conf_ids.end(); it++) {
-	AmConferenceStatus::postConferenceEvent(*it, GroupActive, getLocalTag());
-  }
   
   ptt_status = PTT_group;
 }
@@ -1000,6 +1017,7 @@ void ConferenceDialog::cancelConnectGroup(){
   play_list.PutToGroupChannel(false);
   for(set<string>::iterator it = sub_conf_ids.begin(); it != sub_conf_ids.end(); it++) {
 	AmConferenceStatus::postConferenceEvent(*it, GroupDeactive, getLocalTag());
+	AmConferenceStatus::setActiveConferenceReturnStatus(*it, false);
   }
   
   ptt_status = PTT_cancel_group;
@@ -1007,8 +1025,13 @@ void ConferenceDialog::cancelConnectGroup(){
 
 void ConferenceDialog::connectToCompany(){
   if(ptt_status == PTT_company || rtp_recv == RTP_company)
-	  return;
+	return;
 
+  if(!AmConferenceStatus::setActiveConferenceReturnStatus(company_id, true)) {
+  	//has one active - send busy
+    return;
+  }
+  
   play_list.PutToCompanyChannel(true);
   AmConferenceStatus::postConferenceEvent(company_id, CompanyActive, getLocalTag());
   
@@ -1021,6 +1044,7 @@ void ConferenceDialog::cancelConnectCompany(){
   
   play_list.PutToCompanyChannel(false);
   AmConferenceStatus::postConferenceEvent(company_id, CompanyDeactive, getLocalTag());
+  AmConferenceStatus::setActiveConferenceReturnStatus(company_id, false);
   
   ptt_status = PTT_cancel_company;
 }

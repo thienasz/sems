@@ -120,6 +120,24 @@ void AmConferenceStatus::releaseChannel(const string& cid, unsigned int ch_id)
   cid2s_mut.unlock();
 }
 
+bool AmConferenceStatus::setActiveConferenceReturnStatus(const string& cid, bool active)
+{
+  cid2s_mut.lock();
+  std::map<std::string,AmConferenceStatus*>::iterator it = cid2status.find(cid);
+  bool success = false;
+
+  if(it != cid2status.end()){
+	AmConferenceStatus* st = it->second;
+	active = st->setActive(active);
+  }
+  else {
+	ERROR("conference '%s' does not exists\n",cid.c_str());
+  }
+  cid2s_mut.unlock();
+
+  return success;
+}
+
 //
 // instance methods
 //
@@ -191,6 +209,19 @@ AmConferenceChannel* AmConferenceStatus::getChannel(const string& sess_id, int i
   sessions_mut.unlock();
 
   return ch;
+}
+
+bool AmConferenceStatus::setActive(bool active)
+{
+  bool success = false;
+  active_mut.lock();
+  if(conf_active != active){
+    conf_active = active;
+	success = true;
+  }
+  active_mut.unlock();
+
+  return success;
 }
 
 int AmConferenceStatus::releaseChannel(unsigned int ch_id)

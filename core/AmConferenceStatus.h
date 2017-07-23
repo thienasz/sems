@@ -85,6 +85,7 @@ class AmConferenceStatus
   };
 
   string                 conf_id;
+  bool                   conf_active;
   AmMultiPartyMixer      mixer;
     
   // sess_id -> ch_id
@@ -94,14 +95,17 @@ class AmConferenceStatus
   std::map<unsigned int, SessInfo*> channels;
 
   AmMutex                      sessions_mut;
+  AmMutex                      active_mut;
 
   AmConferenceStatus(const string& conference_id);
   ~AmConferenceStatus();
 
   AmConferenceChannel* getChannel(const string& sess_id, int input_sample_rate);
-
+  
   int releaseChannel(unsigned int ch_id);
 
+  bool setActive(bool active);
+  
   void postConferenceEvent(int event_id, const string& sess_id);
 
 public:
@@ -118,6 +122,9 @@ public:
 				  const string& sess_id);
 
   static size_t getConferenceSize(const string& cid);
+  
+  static bool setActiveConferenceReturnStatus(const string& cid, bool active);
+
 };
 
 #endif
