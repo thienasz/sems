@@ -590,7 +590,19 @@ void ConferenceDialog::onSessionStart()
 		  new DialoutConfEvent(DoConfConnect,
 				       dialout_channel->getConfID()));
   }
-
+  //handle connect conf
+  if(AmConferenceStatus::checkActiveConference(company_id)) {
+    handleRecieveGroupActive(company_id);
+  } else {
+    for(set<string>::iterator it = sub_conf_ids.begin(); it != sub_conf_ids.end(); it++) {	
+	  if(AmConferenceStatus::checkActiveConference(*it)) {
+	    handleRecieveGroupActive(*it);
+		
+		break;
+      }
+	}
+  }
+  
   AmSession::onSessionStart();
 }
 
@@ -726,62 +738,16 @@ void ConferenceDialog::process(AmEvent* ev)
 	  #endif
       break;
 	case GroupActive:
-		DBG("########## hello hello GroupActive room: %s ce %s #########\n", conf_id.c_str(), ce->conf_id.c_str());
-	    if(active_room != "") {
-			DBG("send busy\n");
-		  //send busy
-		  break;
-		}
-	    active_room = ce->conf_id;
-		if(ptt_status != PTT_group) {
-		  rtp_recv = RTP_group;
-	      play_list.setActiveGetChannel(ce->conf_id);
-		} else {
-		  DBG("is not PTT_group\n");
-		}
+	  handleRecieveGroupActive(ce->conf_id);
     break;
 	case CompanyActive:
-		DBG("########## CompanyActive room: %s ce %s #########\n", company_id.c_str(), ce->conf_id.c_str());
-		if(active_room == company_id) {
-		  //send busy
-		  DBG("send busy\n");
-		  break;
-		}
-		
-		cancelConnectGroup();
-	    active_room = ce->conf_id;
-		if(ptt_status != PTT_company) {
-		  rtp_recv = RTP_company;
-		  play_list.setActiveGetCompanyChannel(true);
-		} else {
-		  DBG("is not PTT_company\n");
-		}
+	  handleRecieveCompanyActive(ce->conf_id);
 	break;
 	case GroupDeactive:
-		DBG("########## GroupDeactive room: %s ce %s #########\n", conf_id.c_str(), ce->conf_id.c_str());
-                
-        if(active_room == ce->conf_id)
-           active_room = "";
-
-		if(ptt_status != PTT_cancel_group) {
-		  rtp_recv = RTP_cancel_group;
-		  play_list.setDeactiveGetChannel(ce->conf_id);
-		} else {
-		  DBG("is not PTT_cancel_group\n");
-		}
-
-        break;
+	  handleRecieveGroupDeactive(ce->conf_id);	
+    break;
 	case CompanyDeactive:
-		DBG("########## CompanyDeactive room: %s ce %s #########\n", company_id.c_str(), ce->conf_id.c_str());
-		if(active_room == ce->conf_id)
-		   active_room = "";
-
-		if(ptt_status != PTT_cancel_company) {
-		  rtp_recv = RTP_cancel_company;
-  		  play_list.setActiveGetCompanyChannel(false);
-		} else {
-		  DBG("is not PTT_cancel_company\n");
-		}
+	  handleRecieveCompanyDeactive(ce->conf_id);
 	break;
 
     default:
@@ -1002,6 +968,7 @@ void ConferenceDialog::connectToGroup(){
 	  break;
 	}
   }
+  
   for(set<string>::iterator it = sub_conf_ids.begin(); it != sub_conf_ids.end(); it++) {
   	if(has_active) {
 	  AmConferenceStatus::setActiveConferenceReturnStatus(*it, false);
@@ -1023,7 +990,74 @@ void ConferenceDialog::connectToGroup(){
   DBG("end connectToGroup\n");
 }
 
-void ConferenceDialog::cancelConnectGroup(){
+void ConferenceDialog::handleRecieveGroupActive(string cid)
+{
+	DBG("########## hello hello GroupActive room: %s ce %s #########\n", conf_id.c_str(), cid.c_str());
+	if(active_room != "") {
+		DBG("send busy\n");
+	  //send busy
+	  break;
+	}
+	active_room = cid;
+	if(ptt_status != PTT_group) {
+	  rtp_recv = RTP_group;
+	  play_list.setActiveGetChannel(cid);
+	} else {
+	  DBG("is not PTT_group\n");
+	}
+}
+
+void ConferenceDialog::handleRecieveGroupDeactive(string cid)
+{
+	DBG("########## GroupDeactive room: %s ce %s #########\n", conf_id.c_str(), cid.c_str());
+					
+	if(active_room == cid)
+	   active_room = "";
+
+	if(ptt_status != PTT_cancel_group) {
+	  rtp_recv = RTP_cancel_group;
+	  play_list.setDeactiveGetChannel(cid);
+	} else {
+	  DBG("is not PTT_cancel_group\n");
+	}
+
+}
+
+void ConferenceDialog::handleRecieveCompanyActive(string cid)
+{
+	DBG("########## CompanyActive room: %s ce %s #########\n", company_id.c_str(), cid.c_str());
+	if(active_room == company_id) {
+	  //send busy
+	  DBG("send busy\n");
+	  break;
+	}
+	
+	cancelConnectGroup();
+	active_room = cid;
+	if(ptt_status != PTT_company) {
+	  rtp_recv = RTP_company;
+	  play_list.setActiveGetCompanyChannel(true);
+	} else {
+	  DBG("is not PTT_company\n");
+	}
+}
+
+void ConferenceDialog::handleRecieveCompanyDeactive(string cid)
+{
+	DBG("########## CompanyDeactive room: %s ce %s #########\n", company_id.c_str(), cid.c_str());
+	if(active_room == cid)
+	   active_room = "";
+
+	if(ptt_status != PTT_cancel_company) {
+	  rtp_recv = RTP_cancel_company;
+	  play_list.setActiveGetCompanyChannel(false);
+	} else {
+	  DBG("is not PTT_cancel_company\n");
+	}
+}
+
+void ConferenceDialog::cancelConnectGroup()
+{
   DBG("cancelConnectGroup ptt: %d - rtp_recv: %d", ptt_status, rtp_recv);
 
   if(ptt_status != PTT_group)

@@ -178,6 +178,10 @@ public:
   void cancelConnectCompany();
   void connectToAll();
   void connectToGroup();
+  void handleRecieveGroupActive(string cid);
+  void handleRecieveCompanyActive(string cid);
+  void handleRecieveGroupDeactive(string cid);
+  void handleRecieveCompanyDeactive(string cid);
   void cancelConnectGroup();
   void setCompanyId(string id);
   string getCompanyId();

@@ -105,6 +105,7 @@ class AmConferenceStatus
   int releaseChannel(unsigned int ch_id);
 
   bool setActive(bool active);
+  bool checkActive();
   
   void postConferenceEvent(int event_id, const string& sess_id);
 
@@ -125,6 +126,7 @@ public:
   
   static bool setActiveConferenceReturnStatus(const string& cid, bool active);
 
+  static bool checkActiveConference(const string& cid);
 };
 
 #endif
