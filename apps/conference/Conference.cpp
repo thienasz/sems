@@ -355,7 +355,7 @@ AmSession* ConferenceFactory::onInvite(const AmSipRequest& req, const string& ap
     conf_id += *it;
     if(conf_id.length() == 3) {
       DBG("sub conf: %s - company: %s\n", conf_id.c_str(), company_id.c_str());
-        s->addSubConf(company_id + conf_id);
+        s->addNewRoom(company_id + conf_id);
       conf_id = "";
     }
   }
@@ -399,11 +399,14 @@ AmSession* ConferenceFactory::onRefer(const AmSipRequest& req, const string& app
 ConferenceDialog::ConferenceDialog(const string& conf_id,
 				   AmConferenceChannel* dialout_channel)
   : conf_id(conf_id),
-    channel(),
+    company_channel(),
     play_list(this),
     dialout_channel(dialout_channel),
     state(CS_normal),
-    allow_dialout(false)
+    allow_dialout(false),
+    rtp_recv(RTP_unknown),
+    ptt_status(PTT_unkonw),
+    active_room("")
 {
   dialedout = this->dialout_channel.get() != 0;
   RTPStream()->setPlayoutType(ConferenceFactory::m_PlayoutType);
@@ -416,8 +419,8 @@ ConferenceDialog::~ConferenceDialog()
 {
   DBG("ConferenceDialog::~ConferenceDialog()\n");
 
-  // clean playlist items
-  play_list.flush();
+  // clean connect room
+  closeConnectRooms();
 
 #ifdef WITH_SAS_TTS
   // garbage collect tts files - TODO: delete files
@@ -586,25 +589,25 @@ void ConferenceDialog::setupAudio()
   }
   else {
 
-    channel.reset(AmConferenceStatus::getChannel(conf_id,getLocalTag(),RTPStream()->getSampleRate()));
+    company_channel.reset(AmConferenceStatus::getChannel(conf_id,getLocalTag(),RTPStream()->getSampleRate()));
 
     if (listen_only) {
-	play_list.addToPlaylist(new AmPlaylistItem(channel.get(),
+	play_list.addToPlaylist(new AmPlaylistItem(company_channel.get(),
 						   (AmAudio*)NULL));
     }
     else
-	play_list.addToPlaylist(new AmPlaylistItem(channel.get(),
-						   channel.get()));
+	play_list.addToPlaylist(new AmPlaylistItem(company_channel.get(),
+						   company_channel.get()));
   }
 
 #endif
 
-  channel.reset(AmConferenceStatus::getChannel(company_id,getLocalTag(),RTPStream()->getSampleRate()));
-  play_list.addCompanyToPlaylist(new AmPlaylistItem(channel.get(),
-                 channel.get()));
+  company_channel.reset(AmConferenceStatus::getChannel(company_id,getLocalTag(),RTPStream()->getSampleRate()));
+  play_list.addCompanyToPlaylist(new AmPlaylistItem(company_channel.get(),
+                 company_channel.get()));
 
   for (std::set<string>::iterator it=sub_conf_ids.begin(); it!=sub_conf_ids.end(); it++){
-    DBG("add channel: %s\n", (*it).c_str());
+    DBG("add company_channel: %s\n", (*it).c_str());
     AmConferenceChannel* subChannel = AmConferenceStatus::getChannel(*it,getLocalTag(),RTPStream()->getSampleRate());
     play_list.addToSubPlaylist(*it, new AmPlaylistItem(subChannel, subChannel));
     sub_channels.insert(std::pair<string, AmConferenceChannel*>(*it, subChannel));
@@ -617,7 +620,7 @@ void ConferenceDialog::setupAudio()
   MONITORING_LOG(getLocalTag().c_str(), "conf_id", conf_id.c_str());
 
   if(dialedout || !allow_dialout) {
-    DBG("Dialout not enabled or dialout channel. Disabling DTMF detection.\n");
+    DBG("Dialout not enabled or dialout company_channel. Disabling DTMF detection.\n");
     setDtmfDetectionEnabled(false);
   }
 }
@@ -779,7 +782,7 @@ void ConferenceDialog::setCompanyId(string id)
   company_id = id;
 }
 
-void ConferenceDialog::addSubConf(string id)
+void ConferenceDialog::addNewRoom(string id)
 {
   sub_conf_ids.insert(id);
 }
@@ -789,7 +792,7 @@ void ConferenceDialog::onBye(const AmSipRequest& req)
   if(dialout_channel.get())
     disconnectDialout();
 
-  closeChannels();
+  closeConnectRooms();
   setStopped();
 }
 
@@ -1124,23 +1127,36 @@ void ConferenceDialog::connectMainChannel()
 
   play_list.flush();
 
-  if(!channel.get())
-    channel.reset(AmConferenceStatus
+  if(!company_channel.get())
+    company_channel.reset(AmConferenceStatus
 		  ::getChannel(conf_id,
 			       getLocalTag(),RTPStream()->getSampleRate()));
 
-  play_list.addToPlaylist(new AmPlaylistItem(channel.get(),
-					     channel.get()));
+  play_list.addToPlaylist(new AmPlaylistItem(company_channel.get(),
+					     company_channel.get()));
+}
+
+void ConferenceDialog::closeConnectRooms()
+{
+  if(ptt_status == PTT_company) {
+    DBG("ConferenceDialog::~ConferenceDialog() cancel connect company\n");
+    cancelConnectCompany();
+  } else if(ptt_status == PTT_group) {
+    DBG("ConferenceDialog::~ConferenceDialog() cancel connect group\n");
+    cancelConnectGroup();
+  }
+
+  closeChannels();
 }
 
 void ConferenceDialog::closeChannels()
 {
-  play_list.flush();
+  play_list.flushChannel();
   setInOut(NULL,NULL);
-  channel.reset(NULL);
+  company_channel.reset(NULL);
   dialout_channel.reset(NULL);
   for (map<string, AmConferenceChannel*>::iterator it=sub_channels.begin(); it!=sub_channels.end(); it++) {
-		 delete it->second;
+    delete it->second;
   }
 }
 

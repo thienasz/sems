@@ -64,7 +64,7 @@ enum { DTMF_group = 1,
        DTMF_cancel_company
 };
 
-enum RtpRecv { RTP_c_unknown,
+enum RtpRecv { RTP_unknown,
      RTP_group,
      RTP_cancel_group,
      RTP_company,
@@ -140,7 +140,7 @@ class ConferenceDialog : public AmSession
 
 
   string                        conf_id;
-  auto_ptr<AmConferenceChannel> channel;
+  auto_ptr<AmConferenceChannel> company_channel;
 
   int                           state;
   string                        dtmf_seq;
@@ -173,6 +173,7 @@ class ConferenceDialog : public AmSession
   void handleRecieveCompanyActive(string cid);
   void handleRecieveGroupDeactive(string cid);
   void handleRecieveCompanyDeactive(string cid);
+  void closeConnectRooms();
 
 #ifdef WITH_SAS_TTS
   void sayTTS(string text);
@@ -200,7 +201,7 @@ public:
 		  AmBasicSipDialog::Status old_dlg_status);
 
   void setCompanyId(string id);
-  void addSubConf(string id);
+  void addNewRoom(string id);
 
 #ifdef WITH_SAS_TTS
   void onZRTPEvent(zrtp_event_t event, zrtp_stream_ctx_t *stream_ctx);

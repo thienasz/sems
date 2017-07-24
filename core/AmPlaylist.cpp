@@ -334,9 +334,15 @@ void AmPlaylist::flushChannel()
 {
   DBG("flushChannel\n");
 
-  company_mut.lock();
-  delete company_item;
-  company_mut.unlock();
+  if(cur_item){
+    delete cur_item;
+    cur_item = 0;
+  }
+
+  if(company_item){
+    delete company_item;
+    company_item = 0;
+  }
 
   sub_items_mut.lock();
   sub_items.clear();
