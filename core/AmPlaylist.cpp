@@ -61,6 +61,87 @@ void AmPlaylist::gotoNextItem(bool notify)
 int AmPlaylist::get(unsigned long long system_ts, unsigned char* buffer, 
 		    int output_sample_rate, unsigned int nb_samples)
 {
+  int ret = 0;
+#if 1
+  if(get_company_channel) {
+    company_mut.lock();
+    DBG("get company");
+    ret = company_item->play->get(system_ts,buffer,
+           output_sample_rate,
+           nb_samples);
+    company_mut.unlock();
+    return ret;
+  }
+
+#endif
+//cur_mut.lock();
+if(cur_item && cur_item->play){
+  cur_mut.lock();
+  DBG("get group\n");
+  ret = cur_item->play->get(system_ts,buffer,
+                                     output_sample_rate,
+                                     nb_samples);
+  cur_mut.unlock();
+}else {
+ // ret = calcBytesToRead(nb_samples);
+ // DBG("memset buffer");
+ // memset(buffer,0,ret);
+}
+
+  return ret;
+}
+
+int AmPlaylist::put(unsigned long long system_ts, unsigned char* buffer, 
+		    int input_sample_rate, unsigned int size)
+{
+
+  //DBG("play list put buffer, sub_items size: %zd\n", sub_items.size());
+  int ret = 0;
+
+  
+//DBG("vao put channel\n");
+#if 1
+  if(put_company_channel) {
+  	DBG("put to company channel\n");
+	company_mut.lock();
+
+	ret = company_item->record->put(system_ts,buffer,
+					 input_sample_rate,
+					 size);
+  
+	company_mut.unlock();
+		
+	return ret;
+  }
+#endif
+
+if(put_group_channel){ 
+  bool hasRecordFlag = false;
+  sub_items_mut.lock();
+  for (map<string, AmPlaylistItem*>::iterator it=sub_items.begin(); it!=sub_items.end(); it++) {
+      if(it->second->record) {
+      hasRecordFlag = true;
+      DBG("put to room: %s \n", it->first.c_str());
+      ret = it->second->record->put(system_ts,buffer,
+				     input_sample_rate,
+				     size);
+	}
+  }
+
+  if(sub_items.empty() || !hasRecordFlag) {
+      ret = size;
+  }
+  sub_items_mut.unlock();
+}
+
+  return ret;
+}
+
+
+#if 0
+int AmPlaylist::get(unsigned long long system_ts, unsigned char* buffer, 
+		    int output_sample_rate, unsigned int nb_samples)
+{
   int ret = -1;
 
   cur_mut.lock();
@@ -108,6 +189,7 @@ int AmPlaylist::put(unsigned long long system_ts, unsigned char* buffer,
   cur_mut.unlock();
   return ret;
 }
+#endif
 
 AmPlaylist::AmPlaylist(AmEventQueue* q)
   : AmAudio(new AmAudioFormat(CODEC_PCM16)),

@@ -125,11 +125,11 @@ class ConferenceDialog : public AmSession
 {
   AmPlaylist  play_list;
 
-  unique_ptr<AmAudioFile> LonelyUserFile;
-  unique_ptr<AmAudioFile> JoinSound;
-  unique_ptr<AmAudioFile> DropSound;
-  unique_ptr<AmRingTone>  RingTone;
-  unique_ptr<AmRingTone>  ErrorTone;
+  auto_ptr<AmAudioFile> LonelyUserFile;
+  auto_ptr<AmAudioFile> JoinSound;
+  auto_ptr<AmAudioFile> DropSound;
+  auto_ptr<AmRingTone>  RingTone;
+  auto_ptr<AmRingTone>  ErrorTone;
 
   RtpRecv                 rtp_recv;
   PttStatus               ptt_status;
@@ -140,14 +140,14 @@ class ConferenceDialog : public AmSession
 
 
   string                        conf_id;
-  unique_ptr<AmConferenceChannel> channel;
+  auto_ptr<AmConferenceChannel> channel;
 
   int                           state;
   string                        dtmf_seq;
   bool                          dialedout;
   string                        dialout_suffix;
   string                        dialout_id;
-  unique_ptr<AmConferenceChannel> dialout_channel;
+  auto_ptr<AmConferenceChannel> dialout_channel;
 
   bool                          allow_dialout;
 
@@ -157,7 +157,7 @@ class ConferenceDialog : public AmSession
 
   bool                          listen_only;
 
-  unique_ptr<AmSipRequest>        transfer_req;
+  auto_ptr<AmSipRequest>        transfer_req;
 
 
   void createDialoutParticipant(const string& uri);
