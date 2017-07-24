@@ -996,7 +996,7 @@ void ConferenceDialog::handleRecieveGroupActive(string cid)
 	if(active_room != "") {
 		DBG("send busy\n");
 	  //send busy
-	  break;
+	  return;
 	}
 	active_room = cid;
 	if(ptt_status != PTT_group) {
@@ -1029,7 +1029,7 @@ void ConferenceDialog::handleRecieveCompanyActive(string cid)
 	if(active_room == company_id) {
 	  //send busy
 	  DBG("send busy\n");
-	  break;
+	  return;
 	}
 	
 	cancelConnectGroup();

@@ -146,7 +146,7 @@ bool AmConferenceStatus::checkActiveConference(const string& cid)
 
   if(it != cid2status.end()){
 	AmConferenceStatus* st = it->second;
-	status = st->checkActive(active);
+	status = st->checkActive();
   }
   else {
 	ERROR("conference '%s' does not exists\n",cid.c_str());
