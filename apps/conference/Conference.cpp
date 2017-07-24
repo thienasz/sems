@@ -341,7 +341,7 @@ AmSession* ConferenceFactory::onInvite(const AmSipRequest& req, const string& ap
     if (req.user.substr(0,5)!="conf=")
       throw AmSession::Exception(404, "Not Found");
 
-    conf_id = req.user.substr(5);
+    full_conf_ids = req.user.substr(5);
   }
 
   ConferenceDialog* s = new ConferenceDialog(full_conf_ids);

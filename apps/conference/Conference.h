@@ -173,8 +173,6 @@ class ConferenceDialog : public AmSession
   void handleRecieveCompanyActive(string cid);
   void handleRecieveGroupDeactive(string cid);
   void handleRecieveCompanyDeactive(string cid);
-  void setCompanyId(string id);
-  void addSubConf(string id);
 
 #ifdef WITH_SAS_TTS
   void sayTTS(string text);
@@ -200,6 +198,9 @@ public:
   void onSipReply(const AmSipRequest& req,
 		  const AmSipReply& reply,
 		  AmBasicSipDialog::Status old_dlg_status);
+
+  void setCompanyId(string id);
+  void addSubConf(string id);
 
 #ifdef WITH_SAS_TTS
   void onZRTPEvent(zrtp_event_t event, zrtp_stream_ctx_t *stream_ctx);
