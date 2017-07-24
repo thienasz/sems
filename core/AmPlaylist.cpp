@@ -344,8 +344,8 @@ void AmPlaylist::flushChannel()
     company_item = 0;
   }
 
-  sub_items_mut.lock();
-  sub_items.clear();
-  sub_items_mut.unlock();
+  if(!sub_items.empty()) {
+    sub_items.clear();
+  }
 }
 

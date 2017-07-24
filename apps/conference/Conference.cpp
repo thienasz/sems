@@ -422,6 +422,9 @@ ConferenceDialog::~ConferenceDialog()
   // clean connect room
   closeConnectRooms();
 
+  for (map<string, AmConferenceChannel*>::iterator it=sub_channels.begin(); it!=sub_channels.end(); it++) {
+    delete it->second;
+  }
 #ifdef WITH_SAS_TTS
   // garbage collect tts files - TODO: delete files
   for (vector<AmAudioFile*>::iterator it =
@@ -1155,9 +1158,9 @@ void ConferenceDialog::closeChannels()
   setInOut(NULL,NULL);
   company_channel.reset(NULL);
   dialout_channel.reset(NULL);
-  for (map<string, AmConferenceChannel*>::iterator it=sub_channels.begin(); it!=sub_channels.end(); it++) {
-    delete it->second;
-  }
+//  for (map<string, AmConferenceChannel*>::iterator it=sub_channels.begin(); it!=sub_channels.end(); it++) {
+//    delete it->second;
+//  }
 }
 
 void ConferenceDialog::onSipRequest(const AmSipRequest& req)
