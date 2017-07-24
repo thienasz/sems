@@ -33,6 +33,8 @@
 #include "AmEventQueue.h"
 
 #include <deque>
+#include <map>
+using std:map
 using std::deque;
 /** \brief entry in an \ref AmPlaylist */
 struct AmPlaylistItem
