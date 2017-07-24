@@ -44,6 +44,7 @@ enum { ConfNewParticipant = 1,
        CompanyActive,
        CompanyDeactive};
 
+
 /** \brief event in a conference*/
 struct ConferenceEvent: public AmEvent
 {
@@ -85,9 +86,11 @@ class AmConferenceStatus
   };
 
   string                 conf_id;
-  bool                   conf_active;
   AmMultiPartyMixer      mixer;
-    
+
+  AmMutex                active_mut;
+  bool                   conf_active;
+  
   // sess_id -> ch_id
   std::map<string, unsigned int> sessions;
 
@@ -95,19 +98,18 @@ class AmConferenceStatus
   std::map<unsigned int, SessInfo*> channels;
 
   AmMutex                      sessions_mut;
-  AmMutex                      active_mut;
 
   AmConferenceStatus(const string& conference_id);
   ~AmConferenceStatus();
 
   AmConferenceChannel* getChannel(const string& sess_id, int input_sample_rate);
-  
+
   int releaseChannel(unsigned int ch_id);
+
+  void postConferenceEvent(int event_id, const string& sess_id);
 
   bool setActive(bool active);
   bool checkActive();
-  
-  void postConferenceEvent(int event_id, const string& sess_id);
 
 public:
   const string&      getConfID() { return conf_id; }
@@ -123,7 +125,7 @@ public:
 				  const string& sess_id);
 
   static size_t getConferenceSize(const string& cid);
-  
+
   static bool setActiveConferenceReturnStatus(const string& cid, bool active);
 
   static bool checkActiveConference(const string& cid);

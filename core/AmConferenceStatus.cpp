@@ -58,8 +58,7 @@ AmConferenceChannel* AmConferenceStatus::getChannel(const string& cid,
     st = new AmConferenceStatus(cid);
     cid2status[cid] = st;
   }
-  
-  DBG("conference status - cid: %s, tag: %s\n", cid.c_str(), local_tag.c_str());
+
   ch = st->getChannel(local_tag, input_sample_rate);
   cid2s_mut.unlock();
 
@@ -120,6 +119,7 @@ void AmConferenceStatus::releaseChannel(const string& cid, unsigned int ch_id)
   cid2s_mut.unlock();
 }
 
+
 bool AmConferenceStatus::setActiveConferenceReturnStatus(const string& cid, bool active)
 {
   cid2s_mut.lock();
@@ -127,11 +127,10 @@ bool AmConferenceStatus::setActiveConferenceReturnStatus(const string& cid, bool
   bool success = false;
 
   if(it != cid2status.end()){
-	AmConferenceStatus* st = it->second;
-	success = st->setActive(active);
-  }
-  else {
-	ERROR("conference '%s' does not exists\n",cid.c_str());
+    AmConferenceStatus* st = it->second;
+    success = st->setActive(active);
+  } else {
+    ERROR("conference '%s' does not exists\n",cid.c_str());
   }
   cid2s_mut.unlock();
 
@@ -145,22 +144,23 @@ bool AmConferenceStatus::checkActiveConference(const string& cid)
   bool status = false;
 
   if(it != cid2status.end()){
-	AmConferenceStatus* st = it->second;
-	status = st->checkActive();
-  }
-  else {
-	ERROR("conference '%s' does not exists\n",cid.c_str());
+    AmConferenceStatus* st = it->second;
+    status = st->checkActive();
+  } else {
+    ERROR("conference '%s' does not exists\n",cid.c_str());
   }
   cid2s_mut.unlock();
 
   return status;
 }
+
+
 //
 // instance methods
 //
 
 AmConferenceStatus::AmConferenceStatus(const string& conference_id)
-  : sessions(), channels(), conf_id(conference_id), mixer(), conf_active(false)
+  : sessions(), channels(), conf_id(conference_id), mixer()
 {
 }
 
@@ -190,13 +190,10 @@ AmConferenceChannel* AmConferenceStatus::getChannel(const string& sess_id, int i
 
   sessions_mut.lock();
   std::map<std::string, unsigned int>::iterator it = sessions.find(sess_id);
-  DBG("get channel sessions size: %zd\n", sessions.size());
   if(it != sessions.end()){
-    DBG("enter != end sessions\n");
     ch = new AmConferenceChannel(this,it->second,sess_id,false);
   } else {
     if(!sessions.empty()){
-      DBG("sessions not empty\n");
       int participants = sessions.size()+1;
       for(it = sessions.begin(); it != sessions.end(); it++){
 	AmSessionContainer::instance()->postEvent(
@@ -206,7 +203,6 @@ AmConferenceChannel* AmConferenceStatus::getChannel(const string& sess_id, int i
 						  );
       }
     } else {
-      DBG("sessions emplty\n");
       // The First participant gets its own NewParticipant message
       AmSessionContainer::instance()->postEvent(
 						sess_id, new ConferenceEvent(ConfNewParticipant,1,
@@ -218,7 +214,6 @@ AmConferenceChannel* AmConferenceStatus::getChannel(const string& sess_id, int i
 
     sessions[sess_id] = ch_id;
     channels[ch_id] = si;
-    ERROR("sess_id: %s - ch_id: %d\n", sess_id.c_str(), ch_id);    
 
     ch = new AmConferenceChannel(this,ch_id,sess_id, true);
 
@@ -226,24 +221,6 @@ AmConferenceChannel* AmConferenceStatus::getChannel(const string& sess_id, int i
   sessions_mut.unlock();
 
   return ch;
-}
-
-bool AmConferenceStatus::setActive(bool active)
-{
-  bool success = false;
-  active_mut.lock();
-  if(conf_active != active){
-    conf_active = active;
-	success = true;
-  }
-  active_mut.unlock();
-
-  return success;
-}
-
-bool AmConferenceStatus::checkActive()
-{
-  return conf_active;
 }
 
 int AmConferenceStatus::releaseChannel(unsigned int ch_id)
@@ -282,3 +259,22 @@ int AmConferenceStatus::releaseChannel(unsigned int ch_id)
 
   return participants;
 }
+
+bool AmConferenceStatus::setActive(bool active)
+{
+  bool success = false;
+  active_mut.lock();
+  if(conf_active != active){
+    conf_active = active;
+    success = true;
+  }
+  active_mut.unlock();
+
+  return success;
+}
+
+bool AmConferenceStatus::checkActive()
+{
+  return conf_active;
+}
+

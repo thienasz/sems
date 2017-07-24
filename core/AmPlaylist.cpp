@@ -61,35 +61,8 @@ void AmPlaylist::gotoNextItem(bool notify)
 int AmPlaylist::get(unsigned long long system_ts, unsigned char* buffer, 
 		    int output_sample_rate, unsigned int nb_samples)
 {
-  //DBG("play list get buffer\n");
-  int ret = 0;
-#if 1
-  if(get_company_channel) {
-    company_mut.lock();
-    DBG("get company");
-    ret = company_item->play->get(system_ts,buffer,
-				   output_sample_rate,
-				   nb_samples);
-    company_mut.unlock();
-    return ret;
-  }
+  int ret = -1;
 
-#endif
-//cur_mut.lock();
-if(cur_item && cur_item->play){
-	cur_mut.lock();
-	DBG("get group\n");
-	ret = cur_item->play->get(system_ts,buffer,
-	                                   output_sample_rate,
-	                                   nb_samples);
-	cur_mut.unlock();
-}else {
- // ret = calcBytesToRead(nb_samples);
- // DBG("memset buffer");
- // memset(buffer,0,ret);
-}
-//cur_mut.unlock();
-#if 0
   cur_mut.lock();
   updateCurrentItem();
 
@@ -105,73 +78,18 @@ if(cur_item && cur_item->play){
 
   if(!cur_item || !cur_item->play) {
     ret = calcBytesToRead(nb_samples);
-    DBG("memset buffer");
     memset(buffer,0,ret);
   }
 
   cur_mut.unlock();
-#endif
-#if 0
-  sub_items_mut.lock();
-  channel_mut.lock();
-  bool hasPlayFlag = false;
-  if(activeChannel == ""){
-	  for (map<string, AmPlaylistItem*>::iterator it=sub_items.begin(); it!=sub_items.end(); it++) {
-	    if(it->second->play) {
-	      hasPlayFlag = true;
-	         //DBG("for play items\n");
-		  ret = it->second->play->get(system_ts,buffer,
-					   output_sample_rate,
-					   nb_samples);
-		}
-	  }
-  }
-  else{
-    map<string, AmPlaylistItem*>::iterator map = sub_items.find(activeChannel);
-	if(map != sub_items.end()) {
-	  hasPlayFlag = true;
-      map->second->play->get(system_ts,buffer,
-					   output_sample_rate,
-					   nb_samples);
-	}
-  }
-
-  if(sub_items.empty() || !hasPlayFlag) {
-      
-	  //DBG("memset buffer");
-	  memset(buffer,0,ret);
-  }
-  channel_mut.unlock();
-  sub_items_mut.unlock();
-#endif  
   return ret;
 }
 
 int AmPlaylist::put(unsigned long long system_ts, unsigned char* buffer, 
 		    int input_sample_rate, unsigned int size)
 {
+  int ret = -1;
 
-  //DBG("play list put buffer, sub_items size: %zd\n", sub_items.size());
-  int ret = 0;
-
-  
-//DBG("vao put channel\n");
-#if 1
-  if(put_company_channel) {
-  	DBG("put to company channel\n");
-	company_mut.lock();
-
-	ret = company_item->record->put(system_ts,buffer,
-					 input_sample_rate,
-					 size);
-  
-	company_mut.unlock();
-		
-	return ret;
-  }
-#endif
-
-#if 0
   cur_mut.lock();
   updateCurrentItem();
   while(cur_item && 
@@ -188,66 +106,85 @@ int AmPlaylist::put(unsigned long long system_ts, unsigned char* buffer,
     ret = size;
     
   cur_mut.unlock();
-#endif
-if(put_group_channel){ 
-  bool hasRecordFlag = false;
-  sub_items_mut.lock();
-  for (map<string, AmPlaylistItem*>::iterator it=sub_items.begin(); it!=sub_items.end(); it++) {
-      if(it->second->record) {
-      hasRecordFlag = true;
-      DBG("put to room: %s \n", it->first.c_str());
-      ret = it->second->record->put(system_ts,buffer,
-				     input_sample_rate,
-				     size);
-	}
-  }
-
-  if(sub_items.empty() || !hasRecordFlag) {
-      ret = size;
-  }
-  sub_items_mut.unlock();
-}
-  
   return ret;
 }
 
 AmPlaylist::AmPlaylist(AmEventQueue* q)
   : AmAudio(new AmAudioFormat(CODEC_PCM16)),
-    ev_q(q), cur_item(0), put_company_channel(false), activeChannel(""), put_group_channel(false),
-    get_company_channel(false)
+    ev_q(q), cur_item(0)
 {
   
 }
 
-AmPlaylist::~AmPlaylist()
-{
+AmPlaylist::~AmPlaylist() {
   flush();
 }
 
 void AmPlaylist::addToPlaylist(AmPlaylistItem* item)
 {
   items_mut.lock();
-  DBG("enter add back size item: %zd\n", items.size());
-
   items.push_back(item);
-  DBG("end add front size item: %zd\n", items.size());
-
   items_mut.unlock();
+}
+
+void AmPlaylist::addToPlayListFront(AmPlaylistItem* item)
+{
+  cur_mut.lock();
+  items_mut.lock();
+  if(cur_item){
+    items.push_front(cur_item);
+    cur_item = item;
+  }
+  else {
+    items.push_front(item);
+  }    
+  items_mut.unlock();
+  cur_mut.unlock();
+}
+
+void AmPlaylist::close()
+{
+  DBG("flushing playlist before closing\n");
+  flush();
+  AmAudio::close();
+}
+
+void AmPlaylist::flush()
+{
+  cur_mut.lock();
+  if(!cur_item && !items.empty()){
+    cur_item = items.front();
+    items.pop_front();
+  }
+
+  while(cur_item)
+    gotoNextItem(false);
+  cur_mut.unlock();
+}
+
+bool AmPlaylist::isEmpty()
+{
+  bool res(true);
+
+  cur_mut.lock();
+  items_mut.lock();
+
+  res = (!cur_item) && items.empty();
+    
+  items_mut.unlock();
+  cur_mut.unlock();
+
+  return res;
 }
 
 void AmPlaylist::addCompanyToPlaylist(AmPlaylistItem* item)
 {
   if(company_item)
-  	return;
+    return;
   DBG("vao add company");
   company_mut.lock();
   company_item = item;
   company_mut.unlock();
-}
-
-void AmPlaylist::setPlayCompanyRoom(bool play)
-{
-  put_company_channel = play;
 }
 
 void AmPlaylist::addToSubPlaylist(string conf, AmPlaylistItem* item)
@@ -259,31 +196,6 @@ void AmPlaylist::addToSubPlaylist(string conf, AmPlaylistItem* item)
   DBG("end add front size sub_items: %zd\n", sub_items.size());
 
   sub_items_mut.unlock();
-}
-
-void AmPlaylist::addToPlayListFront(AmPlaylistItem* item)
-{
-  DBG("enter add front size item: %zd\n", items.size());
-
-  cur_mut.lock();
-  items_mut.lock();
-  if(cur_item){
-    items.push_front(cur_item);
-    cur_item = item;
-  }
-  else {
-    items.push_front(item);
-  }    
-
-  DBG("end add front size item: %zd\n", items.size());
-  items_mut.unlock();
-  cur_mut.unlock();
-}
-
-string AmPlaylist::getActiveChannel()
-{
-  DBG("get chl: %s\n", activeChannel.c_str());
-  return activeChannel;
 }
 
 void AmPlaylist::PutToGroupChannel(bool is_put)
@@ -304,23 +216,23 @@ void AmPlaylist::PutToCompanyChannel(bool is_put)
 
 void AmPlaylist::setActiveGetCompanyChannel(bool is_get)
 {
-    DBG("setActiveGetCompanyChannel\n");
-    get_company_channel_mut.lock();
-    get_company_channel = is_get;
-    get_company_channel_mut.unlock();
+  DBG("setActiveGetCompanyChannel\n");
+  get_company_channel_mut.lock();
+  get_company_channel = is_get;
+  get_company_channel_mut.unlock();
 }
 
 void AmPlaylist::setActiveGetChannel(string channel)
 {
-    DBG("setActiveGetChannel: %s\n", channel.c_str());
-    map<string, AmPlaylistItem*>::iterator it = sub_items.find(channel);
-    items_mut.lock();
-    if(it != sub_items.end()) {
-	  activeChannel = it->first;
-      cur_item = it->second;
-      DBG("set ok\n");
-    }
-    items_mut.unlock();
+  DBG("setActiveGetChannel: %s\n", channel.c_str());
+  map<string, AmPlaylistItem*>::iterator it = sub_items.find(channel);
+  items_mut.lock();
+  if(it != sub_items.end()) {
+    activeChannel = it->first;
+    cur_item = it->second;
+    DBG("set ok\n");
+  }
+  items_mut.unlock();
 }
 
 
@@ -329,19 +241,11 @@ void AmPlaylist::setDeactiveGetChannel(string channel)
   DBG("setDeactiveGetChannel: %s\n", channel.c_str());
   map<string, AmPlaylistItem*>::iterator it = sub_items.find(channel);
   if(it->second == cur_item) {
-  	DBG("setDeactiveGetChannel ok: %s\n", channel.c_str());
-	items_mut.lock();
-  	cur_item = NULL;
-  	items_mut.unlock();
+    DBG("setDeactiveGetChannel ok: %s\n", channel.c_str());
+    items_mut.lock();
+    cur_item = NULL;
+    items_mut.unlock();
   }
-}
-
-void AmPlaylist::close()
-{
-  DBG("flushing playlist before closing\n");
-  flush();
-
-  AmAudio::close();
 }
 
 void AmPlaylist::flushChannel()
@@ -357,41 +261,3 @@ void AmPlaylist::flushChannel()
   sub_items_mut.unlock();
 }
 
-void AmPlaylist::flush()
-{
-  cur_mut.lock();
-  if(!cur_item && !items.empty()){
-    cur_item = items.front();
-    items.pop_front();
-  }
-
-  while(cur_item)
-    gotoNextItem(false);
-  cur_mut.unlock();
-}
-
-void AmPlaylist::nextToItem(){
-  items_mut.lock();
-  DBG("next size item: %zd\n", items.size());
-  if(!items.empty()){
-    //icur_item = items.front();
-    items.pop_front();
-  }
-  items_mut.unlock();
-  gotoNextItem(false);
-}
-
-bool AmPlaylist::isEmpty()
-{
-  bool res(true);
-
-  cur_mut.lock();
-  items_mut.lock();
-
-  res = (!cur_item) && items.empty();
-    
-  items_mut.unlock();
-  cur_mut.unlock();
-
-  return res;
-}

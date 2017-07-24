@@ -18,8 +18,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
@@ -37,7 +37,7 @@
 #include "AmConferenceChannel.h"
 #include "AmPlaylist.h"
 #include "AmRingTone.h"
-#include "AmEventDispatcher.h"
+
 #include <map>
 #include <string>
 using std::map;
@@ -46,18 +46,11 @@ using std::string;
 class ConferenceStatus;
 class ConferenceStatusContainer;
 
+
 enum { CS_normal=0,
        CS_dialing_out,
        CS_dialed_out,
        CS_dialout_connected };
-
-enum { DTMF_group = 1,
-       DTMF_cancel_group = 2,
-       DTMF_company = 3,
-       DTMF_cancel_company = 4,
-       DTMF_all = 5,
-       DTMF_cancel_all = 6
-};
 
 enum { DoConfConnect = 100,
        DoConfDisconnect,
@@ -65,24 +58,22 @@ enum { DoConfConnect = 100,
        DoConfError
 };
 
-enum RtpStatus { RTP_unknown,
-	   RTP_getgroup,
-	   RTP_putgroup,
-       RTP_getcompany,
-       RTP_putcompany,
-       RTP_inall
+enum { DTMF_group = 1,
+       DTMF_cancel_group,
+       DTMF_company,
+       DTMF_cancel_company
 };
 
 enum RtpRecv { RTP_c_unknown,
-	   RTP_group,
-	   RTP_cancel_group,
-       RTP_company,
-       RTP_cancel_company
+     RTP_group,
+     RTP_cancel_group,
+     RTP_company,
+     RTP_cancel_company
 };
 
 enum PttStatus { PTT_unkonw,
-	   PTT_group,
-	   PTT_cancel_group,
+     PTT_group,
+     PTT_cancel_group,
        PTT_company,
        PTT_cancel_company
 };
@@ -91,7 +82,7 @@ enum PttStatus { PTT_unkonw,
 struct DialoutConfEvent : public AmEvent {
 
   string conf_id;
-    
+
   DialoutConfEvent(int event_id,
 		   const string& conf_id)
     : AmEvent(event_id),
@@ -99,37 +90,64 @@ struct DialoutConfEvent : public AmEvent {
   {}
 };
 
+/** \brief Factory for conference sessions */
+class ConferenceFactory : public AmSessionFactory
+{
+  static AmSessionEventHandlerFactory* session_timer_f;
+  static AmConfigReader cfg;
+
+public:
+  static string AudioPath;
+  static string LonelyUserFile;
+  static string JoinSound;
+  static string DropSound;
+  static string DialoutSuffix;
+  static PlayoutType m_PlayoutType;
+  static unsigned int MaxParticipants;
+  static bool UseRFC4240Rooms;
+
+  static void setupSessionTimer(AmSession* s);
+
+#ifdef USE_MYSQL
+  static mysqlpp::Connection Connection;
+#endif
+
+  ConferenceFactory(const string& _app_name);
+  virtual AmSession* onInvite(const AmSipRequest&, const string& app_name,
+			      const map<string,string>& app_params);
+  virtual AmSession* onRefer(const AmSipRequest& req, const string& app_name,
+			     const map<string,string>& app_params);
+  virtual int onLoad();
+};
 
 /** \brief session logic implementation of conference sessions */
 class ConferenceDialog : public AmSession
 {
   AmPlaylist  play_list;
 
-  auto_ptr<AmAudioFile> LonelyUserFile;
-  auto_ptr<AmAudioFile> JoinSound;
-  auto_ptr<AmAudioFile> DropSound;
-  auto_ptr<AmRingTone>  RingTone;
-  auto_ptr<AmRingTone>  ErrorTone;
+  unique_ptr<AmAudioFile> LonelyUserFile;
+  unique_ptr<AmAudioFile> JoinSound;
+  unique_ptr<AmAudioFile> DropSound;
+  unique_ptr<AmRingTone>  RingTone;
+  unique_ptr<AmRingTone>  ErrorTone;
 
-  RtpStatus						rtp_status;
-  RtpRecv						rtp_recv;
-  PttStatus 					ptt_status;
-  string						active_room;
-  bool                          isGroupPtt;
-  string                        conf_id;
-  string 		 	 			conf_id_active;
-  map<string, bool>             conf_ids_active;
-  set<string>                   sub_conf_ids;
-  string                        company_id;
-  auto_ptr<AmConferenceChannel> channel;
+  RtpRecv                 rtp_recv;
+  PttStatus               ptt_status;
+  string                  active_room;
+  set<string>             sub_conf_ids;
+  string                  company_id;
   map<string, AmConferenceChannel*> sub_channels;
+
+
+  string                        conf_id;
+  unique_ptr<AmConferenceChannel> channel;
 
   int                           state;
   string                        dtmf_seq;
   bool                          dialedout;
   string                        dialout_suffix;
   string                        dialout_id;
-  auto_ptr<AmConferenceChannel> dialout_channel;
+  unique_ptr<AmConferenceChannel> dialout_channel;
 
   bool                          allow_dialout;
 
@@ -139,15 +157,24 @@ class ConferenceDialog : public AmSession
 
   bool                          listen_only;
 
-  auto_ptr<AmSipRequest>        transfer_req;
+  unique_ptr<AmSipRequest>        transfer_req;
 
 
   void createDialoutParticipant(const string& uri);
   void disconnectDialout();
   void connectMainChannel();
-  void connectChannelByUri(const string& uri);
   void closeChannels();
   void setupAudio();
+  void connectToCompany();
+  void cancelConnectCompany();
+  void connectToGroup();
+  void cancelConnectGroup();
+  void handleRecieveGroupActive(string cid);
+  void handleRecieveCompanyActive(string cid);
+  void handleRecieveGroupDeactive(string cid);
+  void handleRecieveCompanyDeactive(string cid);
+  void setCompanyId(string id);
+  void addSubConf(string id);
 
 #ifdef WITH_SAS_TTS
   void sayTTS(string text);
@@ -171,72 +198,15 @@ public:
 
   void onSipRequest(const AmSipRequest& req);
   void onSipReply(const AmSipRequest& req,
-		  const AmSipReply& reply, 
+		  const AmSipReply& reply,
 		  AmBasicSipDialog::Status old_dlg_status);
 
-  void connectToCompany();
-  void cancelConnectCompany();
-  void connectToAll();
-  void connectToGroup();
-  void handleRecieveGroupActive(string cid);
-  void handleRecieveCompanyActive(string cid);
-  void handleRecieveGroupDeactive(string cid);
-  void handleRecieveCompanyDeactive(string cid);
-  void cancelConnectGroup();
-  void setCompanyId(string id);
-  string getCompanyId();
-  void addSubConf(string id);  
-  set<string> getSubConf();
-  virtual int writeStreams(unsigned long long ts, unsigned char *buffer);
 #ifdef WITH_SAS_TTS
   void onZRTPEvent(zrtp_event_t event, zrtp_stream_ctx_t *stream_ctx);
 #endif
-};
-
-/** \brief Factory for conference sessions */
-class ConferenceFactory : public AmSessionFactory
-{
-  static AmSessionEventHandlerFactory* session_timer_f;
-  static AmConfigReader cfg;
-
-public:
-  static std::multimap<string, ConferenceDialog*> Comp2Session;
-  static std::multimap<string, ConferenceDialog*> Conf2Session;
-  
-  static string AudioPath;
-  static string LonelyUserFile;
-  static string JoinSound;
-  static string DropSound;
-  static string DialoutSuffix;
-  static PlayoutType m_PlayoutType;
-  static unsigned int MaxParticipants;
-  static bool UseRFC4240Rooms;
-
-  static void setupSessionTimer(AmSession* s);
-
-  static void connectToGroup(ConferenceDialog* conferenceActive);
-  static void cancelConnectGroup(ConferenceDialog* conferenceActive);
-
-  static void connectToCompany(ConferenceDialog* conferenceActive);
-  static void cancelConnectCompany(ConferenceDialog* conferenceActive);
-  
-  static void connectToAll(ConferenceDialog* conferenceActive);
-  static void cancelConnectAll(ConferenceDialog* conferenceActive);
-
-#ifdef USE_MYSQL
-  static mysqlpp::Connection Connection;
-#endif
-
-  ConferenceFactory(const string& _app_name);
-  virtual AmSession* onInvite(const AmSipRequest&, const string& app_name,
-			      const map<string,string>& app_params);
-  virtual AmSession* onRefer(const AmSipRequest& req, const string& app_name,
-			     const map<string,string>& app_params);
-  virtual int onLoad();
 };
 
 #endif
 // Local Variables:
 // mode:C++
 // End:
-
