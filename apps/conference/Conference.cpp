@@ -592,7 +592,7 @@ void ConferenceDialog::onSessionStart()
   }
   //handle connect conf
   if(AmConferenceStatus::checkActiveConference(company_id)) {
-    handleRecieveGroupActive(company_id);
+    handleRecieveCompanyActive(company_id);
   } else {
     for(set<string>::iterator it = sub_conf_ids.begin(); it != sub_conf_ids.end(); it++) {	
 	  if(AmConferenceStatus::checkActiveConference(*it)) {
