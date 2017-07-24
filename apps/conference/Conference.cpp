@@ -399,7 +399,7 @@ AmSession* ConferenceFactory::onRefer(const AmSipRequest& req, const string& app
 ConferenceDialog::ConferenceDialog(const string& conf_id,
 				   AmConferenceChannel* dialout_channel)
   : conf_id(conf_id),
-    company_channel(),
+    company_channel(nullptr),
     play_list(this),
     dialout_channel(dialout_channel),
     state(CS_normal),
@@ -420,15 +420,22 @@ ConferenceDialog::~ConferenceDialog()
   DBG("ConferenceDialog::~ConferenceDialog()\n");
 
   // clean connect room
-  closeConnectRooms();
-
+  //closeConnectRooms();
+  try {
+  play_list.flushChannel();
   for (map<string, AmConferenceChannel*>::iterator it=sub_channels.begin(); it!=sub_channels.end(); it++) {
-    delete it->second;
+    if(it->second) {
+       delete it->second;
+    }
+  }
+  sub_channels.clear();
+  } catch(...) {
+    DBG("**********\n********Error **********\n**********\n");
   }
 #ifdef WITH_SAS_TTS
   // garbage collect tts files - TODO: delete files
   for (vector<AmAudioFile*>::iterator it =
-	 TTSFiles.begin();it!=TTSFiles.end();it++) {
+    TTSFiles.begin();it!=TTSFiles.end();it++) {
     delete *it;
   }
 #endif
@@ -749,7 +756,7 @@ void ConferenceDialog::handleRecieveGroupDeactive(string cid)
 
 void ConferenceDialog::handleRecieveCompanyActive(string cid)
 {
-  DBG("########## CompanyActive room: %s ce %s #########\n", company_id.c_str(), cid.c_str());
+  DBG("########## CompanyActive room: %s ce %s #########\n", conf_id.c_str(), cid.c_str());
   if(active_room == company_id) {
     //send busy
     DBG("send busy\n");
@@ -768,7 +775,7 @@ void ConferenceDialog::handleRecieveCompanyActive(string cid)
 
 void ConferenceDialog::handleRecieveCompanyDeactive(string cid)
 {
-  DBG("########## CompanyDeactive room: %s ce %s #########\n", company_id.c_str(), cid.c_str());
+  DBG("########## CompanyDeactive room: %s ce %s #########\n", conf_id.c_str(), cid.c_str());
   if(active_room == cid)
      active_room = "";
 
@@ -861,6 +868,7 @@ void ConferenceDialog::process(AmEvent* ev)
     case CompanyDeactive:
       handleRecieveCompanyDeactive(ce->conf_id);
       break;
+
     default:
       break;
     }
@@ -1154,13 +1162,21 @@ void ConferenceDialog::closeConnectRooms()
 
 void ConferenceDialog::closeChannels()
 {
-  play_list.flushChannel();
+  DBG("close channels\n");
+  play_list.flush();
+  //play_list.flushChannel();
   setInOut(NULL,NULL);
   company_channel.reset(NULL);
   dialout_channel.reset(NULL);
-//  for (map<string, AmConferenceChannel*>::iterator it=sub_channels.begin(); it!=sub_channels.end(); it++) {
-//    delete it->second;
-//  }
+  
+#if 0
+  for (map<string, AmConferenceChannel*>::iterator it=sub_channels.begin(); it!=sub_channels.end(); it++) {
+    if(it->second) {
+       delete it->second;
+    }
+  }
+#endif
+//  sub_channels.clear();
 }
 
 void ConferenceDialog::onSipRequest(const AmSipRequest& req)

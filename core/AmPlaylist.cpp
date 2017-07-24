@@ -66,9 +66,12 @@ int AmPlaylist::get(unsigned long long system_ts, unsigned char* buffer,
   if(get_company_channel) {
     company_mut.lock();
     DBG("get company");
-    ret = company_item->play->get(system_ts,buffer,
-           output_sample_rate,
-           nb_samples);
+    if(company_item && company_item->play) {
+      ret = company_item->play->get(system_ts,buffer,
+             output_sample_rate,
+             nb_samples);
+    }
+
     company_mut.unlock();
     return ret;
   }
@@ -78,9 +81,11 @@ int AmPlaylist::get(unsigned long long system_ts, unsigned char* buffer,
 if(cur_item && cur_item->play){
   cur_mut.lock();
   DBG("get group\n");
-  ret = cur_item->play->get(system_ts,buffer,
+  if(cur_item && cur_item->play) {
+    ret = cur_item->play->get(system_ts,buffer,
                                      output_sample_rate,
                                      nb_samples);
+  }
   cur_mut.unlock();
 }else {
  // ret = calcBytesToRead(nb_samples);
@@ -104,11 +109,11 @@ int AmPlaylist::put(unsigned long long system_ts, unsigned char* buffer,
   if(put_company_channel) {
   	DBG("put to company channel\n");
 	company_mut.lock();
-
-	ret = company_item->record->put(system_ts,buffer,
+        if(company_item && company_item->record) {
+	  ret = company_item->record->put(system_ts,buffer,
 					 input_sample_rate,
 					 size);
-  
+        }
 	company_mut.unlock();
 		
 	return ret;
@@ -193,7 +198,8 @@ int AmPlaylist::put(unsigned long long system_ts, unsigned char* buffer,
 
 AmPlaylist::AmPlaylist(AmEventQueue* q)
   : AmAudio(new AmAudioFormat(CODEC_PCM16)),
-    ev_q(q), cur_item(0)
+    ev_q(q), cur_item(0), company_item(0), activeChannel(""), put_group_channel(false),
+    put_company_channel(false), get_company_channel(false)
 {
   
 }
@@ -334,17 +340,18 @@ void AmPlaylist::flushChannel()
 {
   DBG("flushChannel\n");
 
-  if(cur_item){
-    delete cur_item;
-    cur_item = 0;
-  }
-
   if(company_item){
     delete company_item;
     company_item = 0;
   }
 
   if(!sub_items.empty()) {
+    for (map<string, AmPlaylistItem*>::iterator it=sub_items.begin(); it!=sub_items.end(); it++) {
+      if(it->second) {
+        delete it->second;
+      }
+    }
+    
     sub_items.clear();
   }
 }

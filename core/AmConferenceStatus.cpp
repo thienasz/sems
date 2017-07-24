@@ -119,7 +119,6 @@ void AmConferenceStatus::releaseChannel(const string& cid, unsigned int ch_id)
   cid2s_mut.unlock();
 }
 
-
 bool AmConferenceStatus::setActiveConferenceReturnStatus(const string& cid, bool active)
 {
   cid2s_mut.lock();
@@ -154,13 +153,12 @@ bool AmConferenceStatus::checkActiveConference(const string& cid)
   return status;
 }
 
-
 //
 // instance methods
 //
 
 AmConferenceStatus::AmConferenceStatus(const string& conference_id)
-  : sessions(), channels(), conf_id(conference_id), mixer()
+  : sessions(), channels(), conf_id(conference_id), mixer(), conf_active(false)
 {
 }
 
