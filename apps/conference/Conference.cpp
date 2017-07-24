@@ -1050,9 +1050,8 @@ void ConferenceDialog::onDtmf(int event, int duration)
       state = CS_normal;
     }
     break;
-
-  }
 #endif
+  }
 }
 
 void ConferenceDialog::createDialoutParticipant(const string& uri_user)
